@@ -17,7 +17,7 @@ if (!key || !key.startsWith("sk-ant-") || key.includes("여기에")) {
   console.warn("⚠️  ANTHROPIC_API_KEY가 설정되지 않았습니다. .env 파일에 실제 API 키를 넣고 서버를 다시 시작하세요.");
 }
 
-const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" };
+const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".xml": "application/xml; charset=utf-8" };
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
