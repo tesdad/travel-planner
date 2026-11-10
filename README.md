@@ -6,6 +6,17 @@ Claude(claude-opus-5-5)를 이용한 여행 계획 웹앱.
 2. **상세 루트** — 대략적인 루트 + 기간 + 이동 수단 → 일자별·시간대별 상세 일정
 3. **지역 상세** — 루트 결과의 📍지역 버튼 클릭 → 추천 숙소·맛집·관광 스팟 (한 번 불러온 지역은 캐시)
 
+## 지도 · 실제 장소 확인 (선택)
+
+지역 상세에서 AI가 추천한 장소를 실제 지도 데이터로 확인하고, 주소·전화·별점과 함께 지도에 핀으로 표시합니다.
+
+| 환경변수 | 용도 | 발급 |
+|---|---|---|
+| `KAKAO_REST_API_KEY` | 국내 장소 검색 | [Kakao Developers](https://developers.kakao.com) → 애플리케이션 추가 → **앱 키 → REST API 키**, **카카오맵 사용 설정 ON** |
+| `GOOGLE_MAPS_API_KEY` | 해외 장소 검색 (별점 포함) | [Google Cloud Console](https://console.cloud.google.com) → **Places API (New)** 사용 설정 → API 키 (결제 계정 필요, 키는 Places API로 제한 권장) |
+
+키가 없으면 지도 없이 기존처럼 동작합니다. 지도 타일은 OpenStreetMap(키 불필요)을 사용합니다.
+
 ## 실행
 
 1. 의존성 설치
@@ -62,6 +73,7 @@ Claude Console의 **Limits** 메뉴에서 월 지출 한도도 함께 설정해 
 ## 구조
 
 - `lib/planner.mjs` — Claude 호출, JSON 스키마, 입력 검증 (공용)
+- `lib/places.mjs` — 카카오/구글 장소 조회로 AI 추천 장소 검증
 - `lib/limit.mjs` — 사용량 제한 (Upstash Redis 있으면 Redis, 없으면 메모리)
 - `server.mjs` — 일반 Node 서버 (로컬 · Render)
 - `api/*.js`, `lib/vercel.mjs`, `vercel.json` — Vercel 서버리스 함수

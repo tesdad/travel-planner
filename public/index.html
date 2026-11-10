@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root {
     --orange: #f26b1d; --orange-soft: #fff1e7; --navy: #0d3a6e; --navy-deep: #082a52;
@@ -184,6 +186,21 @@
   .map-link { font-size: 12px; color: var(--navy); font-weight: 700; text-decoration: none; }
   .map-link:hover { color: var(--orange); }
   .note { font-size: 12px; color: var(--muted); margin-top: 16px; }
+  #place-map { height: 260px; border-radius: 14px; margin: 0 0 14px; box-shadow: 0 6px 20px rgba(16,35,70,.10); z-index: 0; }
+  .map-legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: -4px 0 12px; }
+  .map-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  .pin { width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,.3); }
+  .pin span { transform: rotate(45deg); color: #fff; font: 700 12px/1 var(--sans); }
+  .pin.stays { background: var(--navy); } .pin.restaurants { background: var(--orange); } .pin.attractions { background: #1e8f8a; }
+  .spot { cursor: default; }
+  .spot.has-pin { cursor: pointer; }
+  .spot.has-pin:hover { box-shadow: 0 8px 22px rgba(16,35,70,.12); }
+  .spot .no { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 700; margin-right: 6px; vertical-align: 1px; }
+  .spot .no.stays { background: var(--navy); } .spot .no.restaurants { background: var(--orange); } .spot .no.attractions { background: #1e8f8a; }
+  .real { font-size: 12.5px; color: var(--navy); background: var(--soft); border-radius: 8px; padding: 7px 10px; margin: 8px 0 6px; }
+  .real .ok { color: #1e8f8a; font-weight: 700; }
+  .real .star { color: #e5a00d; font-weight: 700; }
+  .unverified { font-size: 12px; color: #b0631c; background: var(--orange-soft); border-radius: 6px; padding: 3px 8px; display: inline-block; margin: 6px 0; }
 
   /* ---------- 푸터 ---------- */
   footer { background: var(--navy-deep); color: rgba(255,255,255,.75); padding: 46px 0 30px; font-size: 14px; }
@@ -570,33 +587,95 @@ async function openRegion(region) {
   $("#drawer").scrollTop = 0;
   const body = $("#drawer-body");
   const key = region + "|" + routeContext.route;
-  if (placeCache.has(key)) { body.innerHTML = renderPlace(placeCache.get(key)); return; }
-  body.innerHTML = loading("추천 장소를 찾는 중...");
+  if (placeCache.has(key)) { showPlace(placeCache.get(key)); return; }
+  if (placeMap) { placeMap.remove(); placeMap = null; }
+  body.innerHTML = loading("추천 장소를 찾고 지도에서 확인하는 중...");
   try {
     const data = await post("/api/place", { region, context: routeContext.route, transport: routeContext.transport });
     placeCache.set(key, data);
-    if (currentRegion === region) body.innerHTML = renderPlace(data);
+    if (currentRegion === region) showPlace(data);
   } catch (err) { if (currentRegion === region) body.innerHTML = errorBox(err.message); }
 }
 
-function spotList(title, pill, items, region) {
-  return `<h3>${title} <span class="pill">${pill}</span></h3>${items.map((s) => `
-    <div class="spot">
-      <div class="spot-top"><span class="spot-name">${esc(s.name)}</span><span class="tag2">${esc(s.category)}</span></div>
+const SPOT_GROUPS = [
+  ["stays", "🛏️ 추천 숙소", "STAY"],
+  ["restaurants", "🍽️ 맛집", "EAT"],
+  ["attractions", "📸 관광 스팟", "SEE"],
+];
+
+function realInfo(v) {
+  if (!v) return "";
+  const src = v.source === "kakao" ? "카카오맵" : "구글 지도";
+  const rating = v.rating ? ` · <span class="star">★ ${v.rating.toFixed(1)}</span> (${v.ratingCount.toLocaleString()})` : "";
+  return `<div class="real"><span class="ok">✓ ${src}에서 확인</span>${rating}<br/>📍 ${esc(v.address)}${v.phone ? ` · ☎ ${esc(v.phone)}` : ""}</div>`;
+}
+
+function spotList(key, title, pill, items, region, mapEnabled) {
+  return `<h3>${title} <span class="pill">${pill}</span></h3>${items.map((s, i) => {
+    const v = s.verified;
+    const link = v?.url || `https://map.naver.com/p/search/${encodeURIComponent(region + " " + s.name)}`;
+    return `
+    <div class="spot ${v ? "has-pin" : ""}" data-pin="${key}-${i}">
+      <div class="spot-top"><span class="spot-name">${v ? `<span class="no ${key}">${i + 1}</span>` : ""}${esc(s.name)}</span><span class="tag2">${esc(s.category)}</span></div>
+      ${realInfo(v)}
+      ${mapEnabled && !v ? `<span class="unverified">⚠ 지도에서 찾지 못한 장소예요. 방문 전 꼭 확인하세요.</span>` : ""}
       <p>${esc(s.description)}</p>
       <p class="price">💰 ${esc(s.priceRange)}</p>
       <p class="tip">👉 ${esc(s.tip)}</p>
-      <a class="map-link" target="_blank" rel="noopener" href="https://map.naver.com/p/search/${encodeURIComponent(region + " " + s.name)}">지도에서 보기 ↗</a>
-    </div>`).join("")}`;
+      <a class="map-link" target="_blank" rel="noopener" href="${esc(link)}">${v ? (v.source === "kakao" ? "카카오맵에서 보기" : "구글 지도에서 보기") : "지도에서 검색"} ↗</a>
+    </div>`;
+  }).join("")}`;
 }
 
 function renderPlace(d) {
-  return `<p class="intro">${esc(d.intro)}</p>
-    ${spotList("🛏️ 추천 숙소", "STAY", d.stays, d.region)}
-    ${spotList("🍽️ 맛집", "EAT", d.restaurants, d.region)}
-    ${spotList("📸 관광 스팟", "SEE", d.attractions, d.region)}
-    <p class="note">※ AI 추천이므로 영업 여부·가격은 방문 전 확인해 주세요.</p>`;
+  const hasPins = d.mapEnabled && SPOT_GROUPS.some(([k]) => d[k].some((s) => s.verified));
+  return `${hasPins ? `<div id="place-map"></div>
+      <div class="map-legend"><span><i style="background:var(--navy)"></i>숙소</span><span><i style="background:var(--orange)"></i>맛집</span><span><i style="background:#1e8f8a"></i>관광</span></div>` : ""}
+    <p class="intro">${esc(d.intro)}</p>
+    ${SPOT_GROUPS.map(([k, t, p]) => spotList(k, t, p, d[k], d.region, d.mapEnabled)).join("")}
+    <p class="note">※ AI 추천이므로 영업 여부·가격은 방문 전 확인해 주세요. 지도 © OpenStreetMap</p>`;
 }
+
+// ---------- 지도 (Leaflet + OpenStreetMap) ----------
+let placeMap = null;
+const pinMarkers = {};
+
+function showPlace(d) {
+  const body = $("#drawer-body");
+  body.innerHTML = renderPlace(d);
+  if (placeMap) { placeMap.remove(); placeMap = null; }
+  if (!$("#place-map") || !window.L) return;
+
+  placeMap = L.map("place-map", { scrollWheelZoom: false, zoomControl: true });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "© OpenStreetMap",
+  }).addTo(placeMap);
+
+  const bounds = [];
+  for (const [k] of SPOT_GROUPS) {
+    d[k].forEach((s, i) => {
+      const v = s.verified;
+      if (!v) return;
+      const icon = L.divIcon({ className: "", html: `<div class="pin ${k}"><span>${i + 1}</span></div>`, iconSize: [26, 26], iconAnchor: [13, 26] });
+      const m = L.marker([v.lat, v.lng], { icon }).addTo(placeMap)
+        .bindPopup(`<b>${esc(s.name)}</b><br/>${esc(v.address)}`);
+      pinMarkers[`${k}-${i}`] = m;
+      bounds.push([v.lat, v.lng]);
+    });
+  }
+  placeMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+  setTimeout(() => placeMap && placeMap.invalidateSize(), 320); // 드로어 애니메이션 후 크기 재계산
+}
+
+$("#drawer-body").addEventListener("click", (e) => {
+  if (e.target.closest("a")) return;
+  const card = e.target.closest(".spot.has-pin");
+  const m = card && pinMarkers[card.dataset.pin];
+  if (!m || !placeMap) return;
+  placeMap.setView(m.getLatLng(), 16);
+  m.openPopup();
+  $("#drawer").scrollTo({ top: 0, behavior: "smooth" });
+});
 
 function closeDrawer() {
   currentRegion = null;

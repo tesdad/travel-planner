@@ -9,6 +9,10 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false   # Render 대시보드에서 직접 입력
+      - key: KAKAO_REST_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
       - key: RATE_LIMIT_PER_HOUR
         value: "20"
       - key: DAILY_LIMIT
