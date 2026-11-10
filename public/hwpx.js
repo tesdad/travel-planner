@@ -47,7 +47,10 @@ export function buildSection(route, { link = "" } = {}) {
     const rowCnt = schedule.length + 1;
     return `<hp:tbl id="${1000 + pid}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="1" rowCnt="${rowCnt}" colCnt="${COLS.length}" cellSpacing="0" borderFillIDRef="${FILL.cell}" noAdjust="0">`
       + `<hp:sz width="${TEXT_WIDTH}" widthRelTo="ABSOLUTE" height="${rowCnt * 1000}" heightRelTo="ABSOLUTE" protect="0"/>`
-      + '<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>'
+      // treatAsChar="0": 글자처럼 취급하지 않아야 한글이 표를 쪽 경계에서 행 단위로 나눠 다음 쪽으로 이어 줍니다.
+      // (글자처럼 취급하면 표 전체가 한 덩어리라 통째로 다음 쪽으로 밀리거나 아래가 잘립니다.)
+      // pageBreak="CELL"은 행 중간이 아니라 행 사이에서 나누고, repeatHeader="1"은 다음 쪽에 머리글 행을 반복합니다.
+      + '<hp:pos treatAsChar="0" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>'
       + '<hp:outMargin left="0" right="0" top="0" bottom="0"/><hp:inMargin left="510" right="510" top="283" bottom="283"/>'
       + head + rows + "</hp:tbl>";
   };
