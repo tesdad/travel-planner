@@ -3,141 +3,424 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>여행 플래너</title>
+<title>TRIPMATE · AI 여행 플래너</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #f6f7fb; --card: #fff; --text: #1d2433; --muted: #6b7385; --line: #e3e6ee;
-    --accent: #2f6fed; --accent-soft: #e8f0ff; --warn: #c0392b;
+    --orange: #f26b1d; --orange-soft: #fff1e7; --navy: #0d3a6e; --navy-deep: #082a52;
+    --ink: #1b2a41; --muted: #6e7891; --line: #e6e9f0; --soft: #f4f6fa; --white: #fff;
+    --brush: "Permanent Marker", "Black Han Sans", sans-serif;
+    --kbrush: "Black Han Sans", sans-serif;
+    --serif: "Gowun Batang", serif;
+    --sans: "Noto Sans KR", -apple-system, sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
-  header { padding: 28px 16px 8px; text-align: center; }
-  header h1 { margin: 0; font-size: 26px; }
-  header p { margin: 4px 0 0; color: var(--muted); }
-  main { max-width: 980px; margin: 0 auto; padding: 16px; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-  .tab { flex: 1; padding: 12px; border: 1px solid var(--line); background: var(--card); border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 600; color: var(--muted); }
-  .tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-  .panel { display: none; } .panel.active { display: block; }
-  form { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; }
-  label { font-weight: 600; font-size: 14px; display: grid; gap: 6px; }
-  input, textarea, select { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--text); }
-  textarea { min-height: 70px; resize: vertical; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .chips-input { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip-btn { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
-  .chip-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-  button.primary { padding: 12px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
-  button.primary:disabled { opacity: .6; cursor: wait; }
-  .status { margin: 16px 0; color: var(--muted); text-align: center; }
-  .error { color: var(--warn); }
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -3px; margin-right: 6px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--white); line-height: 1.6; overflow-x: hidden; word-break: keep-all; }
+  button { font-family: inherit; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 20px; position: relative; }
+
+  /* ---------- 손그림 아이콘 ---------- */
+  .doodle { position: absolute; color: var(--orange); pointer-events: none; opacity: .85; }
+  .doodle svg { width: 100%; height: 100%; display: block; }
+
+  /* ---------- 헤더 ---------- */
+  header.top { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid transparent; transition: border-color .2s; }
+  header.top.scrolled { border-color: var(--line); }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+  .logo { font-family: var(--brush); font-size: 26px; color: var(--navy); text-decoration: none; letter-spacing: 1px; }
+  .logo span { color: var(--orange); }
+  .menu { display: flex; gap: 36px; }
+  .menu a { font-family: var(--serif); font-weight: 700; font-size: 13px; letter-spacing: 3px; color: var(--navy); text-decoration: none; text-transform: uppercase; }
+  .menu a:hover, .menu a.on { color: var(--orange); }
+  .nav-cta { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 7px 14px; font-size: 12px; color: var(--navy); font-weight: 700; letter-spacing: 1px; cursor: pointer; text-decoration: none; }
+
+  /* ---------- 히어로 ---------- */
+  .hero { position: relative; overflow: hidden; padding: 56px 0 90px; background:
+      radial-gradient(circle at 1px 1px, #e3e8f1 1px, transparent 0) 0 0 / 22px 22px; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.75) 45%, rgba(255,255,255,.4) 100%); pointer-events: none; }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; z-index: 1; }
+  .eyebrow { font-family: var(--serif); letter-spacing: 8px; color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  .hero h1 { font-family: var(--kbrush); font-weight: 400; font-size: clamp(38px, 5.2vw, 62px); line-height: 1.22; color: var(--navy); margin: 0 0 22px; }
+  .hero h1 .accent { color: var(--orange); position: relative; white-space: nowrap; }
+  .hero h1 .accent::after { content: ""; position: absolute; left: -2%; right: -4%; bottom: -6px; height: 10px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 Q50 2 100 6 T198 4' stroke='%23f26b1d' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%; }
+  .hero p.lead { font-family: var(--serif); color: #4b5670; font-size: 16px; max-width: 470px; margin: 0 0 30px; }
+  .hero-actions { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--orange); color: #fff; border: 0; border-radius: 4px; padding: 13px 26px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; box-shadow: 0 8px 20px rgba(242,107,29,.28); transition: transform .15s, box-shadow .15s; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(242,107,29,.34); }
+  .btn.ghost { background: transparent; color: var(--navy); box-shadow: none; padding: 13px 4px; }
+  .btn.ghost:hover { color: var(--orange); transform: none; }
+  .hero-stats { display: flex; gap: 34px; margin-top: 42px; }
+  .hero-stats b { display: block; font-family: var(--brush); color: var(--navy); font-size: 26px; font-weight: 400; }
+  .hero-stats span { color: var(--muted); font-size: 13px; }
+
+  .hero-art { position: relative; aspect-ratio: 1 / 1; max-width: 480px; justify-self: center; width: 100%; }
+  .hero-art .orbit { position: absolute; inset: 0; border: 2px dashed #c9d3e3; border-radius: 50%; animation: spin 60s linear infinite; }
+  .hero-art .circle { position: absolute; inset: 8%; border-radius: 50%; background: var(--navy); overflow: hidden; box-shadow: 0 30px 60px rgba(13,58,110,.25); }
+  .hero-art .circle svg { width: 100%; height: 100%; display: block; }
+  .float-card { position: absolute; background: #fff; border-radius: 14px; box-shadow: 0 18px 40px rgba(16,35,70,.16); }
+  .float-card.video { left: -6%; top: 6%; width: 46%; padding: 10px; animation: bob 5s ease-in-out infinite; }
+  .float-card.video .pic { border-radius: 9px; aspect-ratio: 16/10; background: linear-gradient(180deg, #5ab7f0 0%, #9ee0f5 55%, #3ec1d3 56%, #1ea2b8 100%); position: relative; overflow: hidden; }
+  .float-card.video .pic::before { content: ""; position: absolute; left: -10%; right: -10%; bottom: -30%; height: 55%; background: #f7e3b5; border-radius: 50% 50% 0 0; }
+  .float-card.video .play { position: absolute; inset: 0; margin: auto; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.92); display: grid; place-items: center; color: var(--navy); font-size: 12px; z-index: 1; }
+  .float-card.video .bar { height: 6px; border-radius: 3px; background: var(--soft); margin-top: 9px; }
+  .float-card.video .bar.short { width: 60%; margin-top: 6px; }
+  .float-card.badge { right: -2%; bottom: 12%; padding: 10px 14px; display: flex; align-items: center; gap: 10px; animation: bob 6s ease-in-out -2s infinite; }
+  .float-card.badge .dot { width: 34px; height: 34px; border-radius: 50%; background: var(--orange-soft); color: var(--orange); display: grid; place-items: center; font-weight: 700; }
+  .float-card.badge small { display: block; color: var(--muted); font-size: 11px; }
+  .float-card.badge strong { font-size: 13px; color: var(--navy); }
   @keyframes spin { to { transform: rotate(360deg); } }
-  h2 { font-size: 19px; margin: 24px 0 10px; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .card h3 { margin: 0 0 2px; font-size: 17px; }
+  @keyframes bob { 50% { transform: translateY(-10px); } }
+
+  /* ---------- 섹션 공통 ---------- */
+  section.block { position: relative; padding: 90px 0; }
+  section.block.tint { background: var(--soft); }
+  .sec-head { text-align: center; margin-bottom: 38px; position: relative; }
+  .sec-head .kicker { font-family: var(--serif); color: var(--orange); font-size: 15px; font-style: italic; }
+  .sec-head h2 { font-family: var(--serif); color: var(--navy); font-size: clamp(26px, 3.4vw, 36px); margin: 6px 0 0; font-weight: 700; }
+  .sec-head p { color: var(--muted); margin: 8px 0 0; font-size: 15px; }
+
+  /* ---------- 검색바 폼 ---------- */
+  .search-bar { background: #fff; border-radius: 80px; box-shadow: 0 20px 50px rgba(16,35,70,.10); display: flex; align-items: center; padding: 12px 12px 12px 34px; gap: 8px; max-width: 920px; margin: 0 auto; }
+  .field { flex: 1; display: flex; gap: 12px; align-items: center; padding: 6px 18px 6px 0; min-width: 0; }
+  .field + .field { border-left: 1px solid var(--line); padding-left: 22px; }
+  .field .ico { color: var(--orange); flex-shrink: 0; width: 20px; height: 20px; }
+  .field label { display: block; flex: 1; min-width: 0; }
+  .field .lbl { display: block; font-family: var(--serif); font-size: 12px; letter-spacing: 3px; color: var(--muted); }
+  .field input, .field select { width: 100%; border: 0; outline: 0; font: inherit; font-family: var(--serif); font-weight: 700; font-size: 15px; color: var(--ink); background: transparent; padding: 2px 0; }
+  .field input::placeholder { color: #a0a8bb; font-weight: 400; }
+  .go { width: 62px; height: 62px; flex-shrink: 0; border-radius: 50%; border: 0; background: var(--navy); color: #fff; cursor: pointer; display: grid; place-items: center; transition: background .2s, transform .2s; }
+  .go:hover { background: var(--orange); transform: scale(1.05); }
+  .go:disabled { opacity: .6; cursor: wait; transform: none; }
+  .go svg { width: 22px; height: 22px; }
+  .sub-row { max-width: 920px; margin: 18px auto 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+  .sub-row .hint-label { font-family: var(--serif); color: var(--muted); font-size: 13px; margin-right: 4px; }
+  .chip-btn { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 15px; font-size: 13px; cursor: pointer; color: var(--navy); transition: all .15s; }
+  .chip-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .chip-btn.on { background: var(--orange); border-color: var(--orange); color: #fff; }
+  .extra-input { width: min(100%, 520px); border: 1px solid var(--line); border-radius: 999px; padding: 9px 18px; font: inherit; font-size: 14px; background: #fff; }
+
+  /* ---------- 상태 ---------- */
+  .status { margin: 34px 0 0; color: var(--muted); text-align: center; font-family: var(--serif); }
+  .error { color: #c0392b; }
+  .loader { display: inline-block; width: 46px; height: 46px; margin-bottom: 10px; color: var(--orange); animation: fly 1.6s ease-in-out infinite; }
+  @keyframes fly { 0%,100% { transform: translate(-14px, 4px) rotate(-6deg); } 50% { transform: translate(14px, -6px) rotate(6deg); } }
+
+  /* ---------- 추천 결과 ---------- */
+  .result-title { display: flex; align-items: center; gap: 12px; font-family: var(--serif); color: var(--navy); font-size: 22px; margin: 50px 0 18px; }
+  .result-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(16,35,70,.08); transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(16,35,70,.14); }
+  .card .cover { height: 150px; position: relative; display: flex; align-items: flex-end; padding: 16px; color: #fff; }
+  .card .cover h3 { margin: 0; font-family: var(--kbrush); font-weight: 400; font-size: 26px; text-shadow: 0 2px 10px rgba(0,0,0,.25); line-height: 1.2; }
+  .card .cover .tag { position: absolute; top: 14px; left: 14px; background: var(--orange); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 3px; }
+  .card .cover .num { position: absolute; top: 8px; right: 14px; font-family: var(--brush); font-size: 38px; opacity: .35; }
+  .card .body { padding: 18px 18px 20px; display: flex; flex-direction: column; flex: 1; }
   .card .sub { color: var(--muted); font-size: 13px; }
-  .card ul { padding-left: 18px; margin: 8px 0; font-size: 14px; }
-  .meta { font-size: 13px; margin: 4px 0; }
-  .meta b { color: var(--muted); font-weight: 600; }
-  .fit { background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-top: 8px; }
-  .link-btn { margin-top: 10px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 13px; cursor: pointer; width: 100%; }
-  .region-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
-  .region { border: 1px solid var(--accent); color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer; font-weight: 600; }
-  .region:hover { background: var(--accent); color: #fff; }
-  .arrow { color: var(--muted); }
-  .day { margin-bottom: 14px; }
-  .day-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .day-num { background: var(--accent); color: #fff; border-radius: 6px; padding: 2px 8px; font-size: 13px; font-weight: 700; }
-  .timeline { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--line); }
-  .timeline li { position: relative; padding: 4px 0 10px 16px; font-size: 14px; }
-  .timeline li::before { content: ""; position: absolute; left: -6px; top: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
-  .time { font-weight: 700; margin-right: 6px; }
-  .transport { color: var(--muted); font-size: 12px; }
-  .stay { font-size: 13px; color: var(--muted); margin-top: 4px; }
-  .hint { font-size: 13px; color: var(--muted); }
-  /* drawer */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 10; }
+  .card .summary { font-family: var(--serif); font-size: 14px; margin: 8px 0 10px; color: #3b4660; }
+  .card ul { padding: 0; margin: 0 0 12px; list-style: none; font-size: 13.5px; }
+  .card ul li { padding-left: 18px; position: relative; margin: 3px 0; }
+  .card ul li::before { content: "✓"; position: absolute; left: 0; color: var(--orange); font-weight: 700; }
+  .meta-row { display: flex; gap: 10px; border-top: 1px dashed var(--line); padding-top: 10px; font-size: 12.5px; }
+  .meta-row div { flex: 1; }
+  .meta-row b { display: block; color: var(--muted); font-weight: 500; font-size: 11.5px; }
+  .fit { background: var(--orange-soft); border-radius: 8px; padding: 9px 12px; font-size: 13px; margin-top: 12px; color: #7a3a10; }
+  .link-btn { margin-top: auto; padding-top: 14px; border: 0; background: none; color: var(--orange); font-weight: 700; font-size: 14px; cursor: pointer; text-align: left; }
+  .link-btn:hover { color: var(--navy); }
+
+  /* ---------- 루트 결과 ---------- */
+  .route-head { background: var(--navy); color: #fff; border-radius: 18px; padding: 30px 32px; margin-top: 46px; position: relative; overflow: hidden; }
+  .route-head::after { content: ""; position: absolute; right: -60px; top: -60px; width: 220px; height: 220px; border-radius: 50%; border: 30px solid rgba(255,255,255,.06); }
+  .route-head h2 { font-family: var(--kbrush); font-weight: 400; font-size: 30px; margin: 0 0 8px; }
+  .route-head p { font-family: var(--serif); opacity: .85; margin: 0 0 18px; max-width: 760px; }
+  .region-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .region { border: 1px solid var(--orange); color: var(--orange); background: #fff; border-radius: 999px; padding: 5px 14px; font-size: 13px; cursor: pointer; font-weight: 700; transition: all .15s; }
+  .region:hover { background: var(--orange); color: #fff; }
+  .route-head .arrow { color: rgba(255,255,255,.5); }
+  .route-head .hint { font-size: 13px; opacity: .7; margin-top: 12px; }
+  .days { display: grid; gap: 20px; margin-top: 24px; }
+  .day { background: #fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(16,35,70,.07); padding: 24px 26px; display: grid; grid-template-columns: 120px 1fr; gap: 20px; }
+  .day-side .day-num { font-family: var(--brush); color: var(--orange); font-size: 18px; letter-spacing: 1px; }
+  .day-side .day-big { font-family: var(--brush); font-size: 54px; color: var(--navy); line-height: 1; }
+  .day-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .day-head strong { font-family: var(--serif); font-size: 17px; color: var(--navy); margin-right: 4px; }
+  .timeline { list-style: none; padding: 0; margin: 0; border-left: 2px dashed #d3dae6; }
+  .timeline li { position: relative; padding: 2px 0 14px 22px; font-size: 14px; }
+  .timeline li::before { content: ""; position: absolute; left: -7px; top: 8px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--orange); }
+  .time { font-family: var(--serif); font-weight: 700; color: var(--orange); margin-right: 8px; }
+  .place { font-weight: 700; color: var(--navy); }
+  .activity { color: #4b5670; }
+  .transport { color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+  .stay { font-size: 13px; color: var(--navy); background: var(--soft); border-radius: 8px; padding: 8px 12px; margin-top: 4px; display: inline-block; }
+  .tips { background: var(--orange-soft); border-radius: 14px; padding: 22px 26px; margin-top: 20px; }
+  .tips strong { font-family: var(--serif); color: var(--orange); font-size: 17px; }
+  .tips ul { margin: 8px 0 0; padding-left: 20px; }
+
+  /* ---------- 드로어 ---------- */
+  .overlay { position: fixed; inset: 0; background: rgba(8,42,82,.45); display: none; z-index: 30; }
   .overlay.open { display: block; }
-  .drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(520px, 100%); background: var(--bg); z-index: 11; transform: translateX(100%); transition: transform .25s ease; overflow-y: auto; padding: 20px 16px; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(540px, 100%); background: var(--soft); z-index: 31; transform: translateX(100%); transition: transform .3s ease; overflow-y: auto; }
   .drawer.open { transform: none; }
-  .drawer-head { display: flex; justify-content: space-between; align-items: center; }
-  .drawer-head h2 { margin: 0; }
-  .close { border: 0; background: none; font-size: 26px; cursor: pointer; color: var(--muted); }
-  .spot { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
-  .spot-top { display: flex; justify-content: space-between; gap: 8px; }
-  .spot-name { font-weight: 700; }
-  .tag { font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .spot p { margin: 4px 0; font-size: 14px; }
-  .spot .tip { font-size: 13px; color: var(--accent); }
-  .map-link { font-size: 12px; color: var(--muted); }
-  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } }
+  .drawer-head { background: var(--navy); color: #fff; padding: 26px 24px 22px; position: sticky; top: 0; z-index: 1; }
+  .drawer-head small { font-family: var(--serif); letter-spacing: 5px; opacity: .7; font-size: 12px; }
+  .drawer-head h2 { margin: 2px 0 0; font-family: var(--kbrush); font-weight: 400; font-size: 30px; }
+  .close { position: absolute; right: 16px; top: 16px; border: 0; background: rgba(255,255,255,.12); color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 22px; cursor: pointer; line-height: 1; }
+  .close:hover { background: var(--orange); }
+  #drawer-body { padding: 20px 20px 30px; }
+  #drawer-body .intro { font-family: var(--serif); color: #3b4660; margin: 0 0 6px; }
+  #drawer-body h3 { font-family: var(--serif); color: var(--navy); font-size: 18px; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; }
+  #drawer-body h3 .pill { background: var(--orange); color: #fff; font-family: var(--sans); font-size: 11px; padding: 2px 8px; border-radius: 3px; }
+  .spot { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 4px 14px rgba(16,35,70,.05); border-left: 3px solid var(--orange); }
+  .spot-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .spot-name { font-weight: 700; color: var(--navy); }
+  .tag2 { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .spot p { margin: 4px 0; font-size: 14px; color: #3b4660; }
+  .spot .price { font-size: 12.5px; color: var(--muted); }
+  .spot .tip { font-size: 13px; color: var(--orange); }
+  .map-link { font-size: 12px; color: var(--navy); font-weight: 700; text-decoration: none; }
+  .map-link:hover { color: var(--orange); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 16px; }
+
+  /* ---------- 푸터 ---------- */
+  footer { background: var(--navy-deep); color: rgba(255,255,255,.75); padding: 46px 0 30px; font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
+  footer .logo { color: #fff; }
+  footer p { margin: 6px 0 0; font-family: var(--serif); }
+
+  /* ---------- 반응형 ---------- */
+  @media (max-width: 900px) {
+    .menu { display: none; }
+    .hero .wrap { grid-template-columns: 1fr; }
+    .hero-art { max-width: 360px; margin-top: 10px; }
+    .grid { grid-template-columns: 1fr; }
+    .day { grid-template-columns: 1fr; gap: 8px; }
+    .day-side { display: flex; align-items: baseline; gap: 8px; }
+    .day-side .day-big { font-size: 30px; }
+    .doodle.hide-sm { display: none; }
+  }
+  @media (max-width: 720px) {
+    .search-bar { flex-direction: column; align-items: stretch; border-radius: 22px; padding: 18px; }
+    .field { padding: 8px 0; }
+    .field + .field { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; padding-top: 14px; }
+    .go { width: 100%; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 4px; font-weight: 700; font-size: 15px; }
+    .go::before { content: attr(aria-label); }
+    section.block { padding: 64px 0; }
+    .hero { padding: 30px 0 60px; }
+    .hero-stats { gap: 18px; }
+    .hero-stats span { font-size: 12px; word-break: keep-all; }
+    .route-head { padding: 24px 20px; }
+    .day { padding: 20px 18px; }
+    .nav-cta { display: none; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>✈️ 여행 플래너</h1>
-  <p>여행지 추천부터 상세 루트, 지역별 숙소·맛집·관광지까지</p>
-</header>
-<main>
-  <div class="tabs">
-    <button class="tab active" data-tab="recommend">① 여행지 추천</button>
-    <button class="tab" data-tab="route">② 상세 루트 짜기</button>
-  </div>
 
-  <!-- 기능 1 -->
-  <section class="panel active" id="panel-recommend">
+<!-- 아이콘 정의 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-plane" viewBox="0 0 120 70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 28c10-2 70 6 96 14 8 3 12 8 8 11s-14 1-22-1L20 38c-8-2-14-5-14-10z"/><path d="M48 33 70 6c3-4 9-3 9 1l-6 30"/><path d="M58 48 52 64c-1 3 3 5 6 3l18-17"/><path d="M14 30 8 16c-1-3 3-5 5-3l12 14"/><circle cx="86" cy="42" r="1.5"/><circle cx="76" cy="40" r="1.5"/><circle cx="66" cy="38" r="1.5"/>
+    </symbol>
+    <symbol id="i-camera" viewBox="0 0 64 54" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="12" width="56" height="38" rx="6" transform="rotate(-8 32 31)"/><circle cx="33" cy="30" r="10"/><path d="M20 12l4-7h14l4 6"/>
+    </symbol>
+    <symbol id="i-passport" viewBox="0 0 60 74" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="4" width="48" height="66" rx="5"/><circle cx="30" cy="30" r="12"/><path d="M18 30h24M30 18c5 4 5 20 0 24M30 18c-5 4-5 20 0 24"/><path d="M18 54h24M22 61h16"/>
+    </symbol>
+    <symbol id="i-car" viewBox="0 0 80 46" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 30v-6c0-3 2-5 5-6l8-2 9-9c2-2 4-3 7-3h16c3 0 5 1 7 3l8 9 5 1c3 1 5 3 5 6v7"/><circle cx="22" cy="34" r="7"/><circle cx="60" cy="34" r="7"/><path d="M29 34h24M28 16h36"/>
+    </symbol>
+    <symbol id="i-map" viewBox="0 0 70 50" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 10l20-6 22 6 20-6v36l-20 6-22-6-20 6z"/><path d="M24 4v36M46 10v36"/>
+    </symbol>
+    <symbol id="i-loop" viewBox="0 0 90 90" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 4c6 20 20 34 34 30 12-4 8-20-2-16-12 5-4 30 14 40 10 6 22 10 32 12"/><path d="M74 64l10 6-12 4"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+    <symbol id="i-bus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21v-3M16 21v-3"/><circle cx="8" cy="14.5" r=".8"/><circle cx="16" cy="14.5" r=".8"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
+  </defs>
+</svg>
+
+<header class="top" id="top">
+  <div class="wrap nav">
+    <a class="logo" href="#home">TRIP<span>MATE</span></a>
+    <nav class="menu">
+      <a href="#home" class="on">Home</a>
+      <a href="#recommend">여행지 추천</a>
+      <a href="#route">루트 만들기</a>
+    </nav>
+    <a class="nav-cta" href="https://github.com/tesdad/travel-planner" target="_blank" rel="noopener">GITHUB</a>
+  </div>
+</header>
+
+<!-- ========== 히어로 ========== -->
+<section class="hero" id="home">
+  <div class="doodle hide-sm" style="left:3%;top:14%;width:52px;height:46px;transform:rotate(-12deg)"><svg><use href="#i-camera"/></svg></div>
+  <div class="doodle hide-sm" style="left:44%;top:56%;width:90px;height:52px;transform:rotate(14deg)"><svg><use href="#i-plane"/></svg></div>
+  <div class="doodle hide-sm" style="right:4%;top:6%;width:70px;height:40px;transform:rotate(-6deg)"><svg><use href="#i-car"/></svg></div>
+  <div class="doodle hide-sm" style="left:6%;bottom:8%;width:50px;height:44px;transform:rotate(10deg)"><svg><use href="#i-camera"/></svg></div>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Explore the World</div>
+      <h1>나에게 딱 맞는<br />여행을 <span class="accent">찾아보세요!</span></h1>
+      <p class="lead">여행 스타일과 기간만 알려주세요. AI가 국내·해외 여행지를 추천하고, 하루하루의 상세 루트와 지역별 숙소·맛집·관광지까지 한 번에 계획해 드립니다.</p>
+      <div class="hero-actions">
+        <a class="btn" href="#recommend">여행지 추천받기 →</a>
+        <a class="btn ghost" href="#route">이미 정한 루트가 있어요</a>
+      </div>
+      <div class="hero-stats">
+        <div><b>6</b><span>국내·해외 추천</span></div>
+        <div><b>DAY</b><span>일자별 상세 일정</span></div>
+        <div><b>3+</b><span>지역별 숙소·맛집·스팟</span></div>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="orbit"></div>
+      <div class="circle">
+        <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+          <circle cx="285" cy="120" r="46" fill="#f26b1d"/>
+          <circle cx="285" cy="120" r="70" fill="#f26b1d" opacity=".12"/>
+          <g fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".9">
+            <path d="M70 110c10-8 20-8 30 0M96 96c8-6 16-6 24 0" />
+          </g>
+          <path d="M0 268 C 60 240, 120 240, 200 262 S 340 280, 400 250 V400 H0Z" fill="#1d5b9c"/>
+          <path d="M0 300 C 80 280, 140 290, 220 306 S 350 316, 400 296 V400 H0Z" fill="#2a74bd"/>
+          <path d="M0 340 C 90 320, 170 330, 250 346 S 360 352, 400 338 V400 H0Z" fill="#f7e3b5"/>
+          <g stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".55">
+            <path d="M40 286c14-6 28-6 42 0M250 292c14-6 28-6 42 0M140 318c12-5 24-5 36 0"/>
+          </g>
+          <!-- 야자수 -->
+          <path d="M118 345 C 122 290, 132 240, 150 200" stroke="#7a4a2a" stroke-width="9" fill="none" stroke-linecap="round"/>
+          <g fill="#2fbf86">
+            <path d="M150 200 C 120 180, 90 186, 70 206 C 100 196, 126 198, 150 204Z"/>
+            <path d="M150 200 C 140 166, 116 152, 90 154 C 116 164, 136 180, 150 204Z"/>
+            <path d="M150 200 C 168 168, 196 160, 222 168 C 194 170, 172 184, 152 204Z"/>
+            <path d="M150 200 C 182 192, 212 202, 228 224 C 200 208, 176 204, 152 204Z"/>
+            <path d="M150 200 C 152 170, 166 150, 186 140 C 172 158, 160 178, 152 204Z"/>
+          </g>
+          <!-- 캐리어 -->
+          <g transform="translate(240 286) rotate(-6)">
+            <rect x="0" y="0" width="70" height="60" rx="9" fill="#f26b1d"/>
+            <rect x="22" y="-14" width="26" height="16" rx="5" fill="none" stroke="#082a52" stroke-width="5"/>
+            <path d="M18 6v48M52 6v48" stroke="#c85412" stroke-width="5"/>
+            <circle cx="12" cy="64" r="5" fill="#082a52"/><circle cx="58" cy="64" r="5" fill="#082a52"/>
+          </g>
+          <!-- 비행기 경로 -->
+          <path d="M40 180 C 120 120, 200 90, 330 60" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="2 10" stroke-linecap="round" fill="none" opacity=".7"/>
+        </svg>
+      </div>
+      <div class="float-card video">
+        <div class="pic"><div class="play">▶</div></div>
+        <div class="bar"></div><div class="bar short"></div>
+      </div>
+      <div class="float-card badge">
+        <div class="dot">AI</div>
+        <div><small>Plan the tour</small><strong>30초 만에 일정 완성</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 기능 1: 여행지 추천 ========== -->
+<section class="block tint" id="recommend">
+  <div class="doodle hide-sm" style="left:6%;top:70px;width:80px;height:80px"><svg><use href="#i-loop"/></svg></div>
+  <div class="doodle hide-sm" style="right:7%;top:60px;width:64px;height:46px;transform:rotate(10deg);color:var(--navy);opacity:.35"><svg><use href="#i-map"/></svg></div>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Find Your Perfect Tour With Your Preferences !!</div>
+      <h2>나에게 맞는 여행지 찾기</h2>
+      <p>여행 스타일과 기간을 입력하면 국내 3곳, 해외 3곳을 추천해 드려요.</p>
+    </div>
     <form id="form-recommend">
-      <label>여행 스타일
-        <div class="chips-input" id="style-chips"></div>
-        <input name="style" placeholder="예: 바다 보며 힐링, 맛집 탐방, 조용한 곳" />
-      </label>
-      <label>여행 기간
-        <input name="duration" placeholder="예: 3박 4일, 주말 1박 2일" required />
-      </label>
-      <button class="primary" type="submit">추천 받기</button>
+      <div class="search-bar">
+        <div class="field">
+          <svg class="ico"><use href="#i-search"/></svg>
+          <label><span class="lbl">STYLE</span><input name="style" placeholder="예: 바다 보며 힐링, 조용한 곳" /></label>
+        </div>
+        <div class="field">
+          <svg class="ico"><use href="#i-cal"/></svg>
+          <label><span class="lbl">DURATION</span><input name="duration" placeholder="예: 3박 4일" required /></label>
+        </div>
+        <button class="go" type="submit" aria-label="추천 받기"><svg><use href="#i-arrow"/></svg></button>
+      </div>
+      <div class="sub-row" id="style-chips"><span class="hint-label">빠른 선택</span></div>
     </form>
     <div id="out-recommend"></div>
-  </section>
+  </div>
+</section>
 
-  <!-- 기능 2 -->
-  <section class="panel" id="panel-route">
+<!-- ========== 기능 2: 상세 루트 ========== -->
+<section class="block" id="route">
+  <div class="doodle hide-sm" style="right:5%;top:50px;width:62px;height:76px;transform:rotate(-16deg)"><svg><use href="#i-passport"/></svg></div>
+  <div class="doodle hide-sm" style="left:5%;top:90px;width:96px;height:56px;transform:rotate(-8deg)"><svg><use href="#i-plane"/></svg></div>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Plan Your Journey Day by Day !!</div>
+      <h2>상세 여행 루트 만들기</h2>
+      <p>대략적인 루트만 알려주시면 시간대별 일정과 이동 방법까지 짜 드려요.</p>
+    </div>
     <form id="form-route">
-      <label>대략적인 여행 루트
-        <textarea name="route" placeholder="예: 서울 출발 → 강릉 → 속초 → 서울" required></textarea>
-      </label>
-      <div class="row">
-        <label>여행 기간
-          <input name="duration" placeholder="예: 2박 3일" required />
-        </label>
-        <label>이동 수단
-          <select name="transport">
-            <option>자가용</option><option>렌터카</option><option>대중교통 (기차/버스)</option>
-            <option>비행기 + 현지 대중교통</option><option>비행기 + 렌터카</option><option>도보/자전거</option>
-          </select>
-        </label>
+      <div class="search-bar">
+        <div class="field" style="flex:1.5">
+          <svg class="ico"><use href="#i-pin"/></svg>
+          <label><span class="lbl">ROUTE</span><input name="route" placeholder="예: 서울 → 강릉 → 속초 → 서울" required /></label>
+        </div>
+        <div class="field">
+          <svg class="ico"><use href="#i-cal"/></svg>
+          <label><span class="lbl">DURATION</span><input name="duration" placeholder="예: 2박 3일" required /></label>
+        </div>
+        <div class="field">
+          <svg class="ico"><use href="#i-bus"/></svg>
+          <label><span class="lbl">TRANSPORT</span>
+            <select name="transport">
+              <option>자가용</option><option>렌터카</option><option>대중교통 (기차/버스)</option>
+              <option>비행기 + 현지 대중교통</option><option>비행기 + 렌터카</option><option>도보/자전거</option>
+            </select>
+          </label>
+        </div>
+        <button class="go" type="submit" aria-label="상세 루트 만들기"><svg><use href="#i-arrow"/></svg></button>
       </div>
-      <label>추가 요청 (선택)
-        <input name="extra" placeholder="예: 아이 동반, 아침 늦게 시작, 카페 많이" />
-      </label>
-      <button class="primary" type="submit">상세 루트 만들기</button>
+      <div class="sub-row">
+        <input class="extra-input" name="extra" placeholder="추가 요청 (선택) · 예: 아이 동반, 아침 늦게 시작, 카페 많이" />
+      </div>
     </form>
     <div id="out-route"></div>
-  </section>
-</main>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="logo" href="#home">TRIP<span>MATE</span></a>
+      <p>AI와 함께 계획하는 나만의 여행</p>
+    </div>
+    <p style="font-size:12px;opacity:.6">※ AI 추천 결과이므로 영업 여부·가격은 방문 전 확인해 주세요.</p>
+  </div>
+</footer>
 
 <!-- 기능 3: 지역 상세 -->
 <div class="overlay" id="overlay"></div>
 <aside class="drawer" id="drawer" aria-hidden="true">
-  <div class="drawer-head"><h2 id="drawer-title">지역</h2><button class="close" id="drawer-close" aria-label="닫기">×</button></div>
+  <div class="drawer-head">
+    <small>DISCOVER</small>
+    <h2 id="drawer-title">지역</h2>
+    <button class="close" id="drawer-close" aria-label="닫기">×</button>
+  </div>
   <div id="drawer-body"></div>
 </aside>
 
 <script>
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const loading = (msg) => `<div class="status"><span class="spinner"></span>${esc(msg)}</div>`;
+const loading = (msg) => `<div class="status"><svg class="loader"><use href="#i-plane"/></svg><br/>${esc(msg)}</div>`;
 const errorBox = (msg) => `<div class="status error">⚠️ ${esc(msg)}</div>`;
 
 async function post(url, body) {
@@ -147,12 +430,14 @@ async function post(url, body) {
   return data;
 }
 
-// 탭
-function showTab(name) {
-  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
-  document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + name));
-}
-document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+// 헤더 그림자 + 메뉴 활성화
+const menuLinks = document.querySelectorAll(".menu a");
+window.addEventListener("scroll", () => {
+  $("#top").classList.toggle("scrolled", scrollY > 10);
+  let current = "home";
+  ["home", "recommend", "route"].forEach((id) => { if ($("#" + id).getBoundingClientRect().top < 140) current = id; });
+  menuLinks.forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + current));
+}, { passive: true });
 
 // 스타일 칩
 const STYLES = ["힐링/휴양", "맛집 탐방", "자연/트레킹", "도시/쇼핑", "역사/문화", "액티비티", "가족 여행", "커플 여행", "가성비"];
@@ -164,6 +449,13 @@ STYLES.forEach((s) => {
   b.onclick = () => { picked.has(s) ? picked.delete(s) : picked.add(s); b.classList.toggle("on"); };
   chipWrap.appendChild(b);
 });
+
+// 카드 커버 색 (여행지 이름으로 고정 색 생성)
+const COVERS = [
+  ["#0d3a6e", "#2a74bd"], ["#f26b1d", "#f7a35c"], ["#1e8f8a", "#5cc7b2"],
+  ["#5a3e9b", "#9c7fe0"], ["#c0392b", "#f08a5d"], ["#2f6b3a", "#7cbf6a"],
+];
+const coverOf = (name) => { let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0; const [a, b] = COVERS[h % COVERS.length]; return `linear-gradient(135deg, ${a}, ${b})`; };
 
 // ---------- 기능 1: 여행지 추천 ----------
 $("#form-recommend").addEventListener("submit", async (e) => {
@@ -178,22 +470,30 @@ $("#form-recommend").addEventListener("submit", async (e) => {
   out.innerHTML = loading("여행지를 고르는 중... (30초 정도 걸릴 수 있어요)");
   try {
     const data = await post("/api/recommend", { style, duration });
-    out.innerHTML = section("🇰🇷 국내 추천", data.domestic, duration) + section("🌏 해외 추천", data.international, duration);
+    out.innerHTML = section("🇰🇷 국내 추천", "국내", data.domestic, duration) + section("🌏 해외 추천", "해외", data.international, duration);
   } catch (err) { out.innerHTML = errorBox(err.message); }
   btn.disabled = false;
 });
 
-function section(title, items, duration) {
-  return `<h2>${title}</h2><div class="grid">${items.map((d) => `
-    <div class="card">
-      <h3>${esc(d.name)}</h3><div class="sub">${esc(d.region)}</div>
-      <p style="font-size:14px;margin:8px 0">${esc(d.summary)}</p>
-      <ul>${d.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
-      <div class="meta"><b>추천 시기</b> ${esc(d.bestSeason)}</div>
-      <div class="meta"><b>예상 경비</b> ${esc(d.estimatedBudget)}</div>
-      <div class="fit">💡 ${esc(d.whyFit)}</div>
-      <button class="link-btn" data-dest="${esc(d.name)}" data-duration="${esc(duration)}">이 여행지로 루트 짜기 →</button>
-    </div>`).join("")}</div>`;
+function section(title, tag, items, duration) {
+  return `<div class="result-title">${title}</div><div class="grid">${items.map((d, i) => `
+    <article class="card">
+      <div class="cover" style="background:${coverOf(d.name)}">
+        <span class="tag">${tag}</span><span class="num">0${i + 1}</span>
+        <h3>${esc(d.name)}</h3>
+      </div>
+      <div class="body">
+        <div class="sub">📍 ${esc(d.region)}</div>
+        <p class="summary">${esc(d.summary)}</p>
+        <ul>${d.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
+        <div class="meta-row">
+          <div><b>추천 시기</b>${esc(d.bestSeason)}</div>
+          <div><b>예상 경비</b>${esc(d.estimatedBudget)}</div>
+        </div>
+        <div class="fit">💡 ${esc(d.whyFit)}</div>
+        <button class="link-btn" data-dest="${esc(d.name)}" data-duration="${esc(duration)}">이 여행지로 루트 짜기 →</button>
+      </div>
+    </article>`).join("")}</div>`;
 }
 
 $("#out-recommend").addEventListener("click", (e) => {
@@ -202,8 +502,8 @@ $("#out-recommend").addEventListener("click", (e) => {
   const form = $("#form-route");
   form.route.value = b.dataset.dest;
   form.duration.value = b.dataset.duration;
-  showTab("route");
-  form.route.focus();
+  $("#route").scrollIntoView({ behavior: "smooth" });
+  setTimeout(() => form.route.focus({ preventScroll: true }), 500);
 });
 
 // ---------- 기능 2: 상세 루트 ----------
@@ -228,23 +528,29 @@ const regionBtn = (r) => `<button class="region" data-region="${esc(r)}">📍 ${
 
 function renderRoute(d) {
   return `
-    <h2>${esc(d.title)}</h2>
-    <p>${esc(d.overview)}</p>
-    <div class="region-bar">${d.regions.map(regionBtn).join('<span class="arrow">→</span>')}</div>
-    <p class="hint">📍 지역을 누르면 추천 숙소 · 맛집 · 관광 스팟을 볼 수 있어요.</p>
-    ${d.days.map((day) => `
-      <div class="card day">
-        <div class="day-head"><span class="day-num">DAY ${day.day}</span><strong>${esc(day.theme)}</strong>${day.areas.map(regionBtn).join("")}</div>
-        <ul class="timeline">${day.schedule.map((s) => `
-          <li>
-            ${s.transport ? `<div class="transport">🚗 ${esc(s.transport)}</div>` : ""}
-            <span class="time">${esc(s.time)}</span><strong>${esc(s.place)}</strong>
-            <div>${esc(s.activity)}</div>
-          </li>`).join("")}
-        </ul>
-        <div class="stay">🛏️ 숙박: ${esc(day.accommodation)}</div>
+    <div class="route-head">
+      <h2>${esc(d.title)}</h2>
+      <p>${esc(d.overview)}</p>
+      <div class="region-bar">${d.regions.map(regionBtn).join('<span class="arrow">→</span>')}</div>
+      <div class="hint">📍 지역을 누르면 추천 숙소 · 맛집 · 관광 스팟을 볼 수 있어요.</div>
+    </div>
+    <div class="days">${d.days.map((day) => `
+      <div class="day">
+        <div class="day-side"><div class="day-num">DAY</div><div class="day-big">${String(day.day).padStart(2, "0")}</div></div>
+        <div>
+          <div class="day-head"><strong>${esc(day.theme)}</strong>${day.areas.map(regionBtn).join("")}</div>
+          <ul class="timeline">${day.schedule.map((s) => `
+            <li>
+              ${s.transport ? `<div class="transport">↳ ${esc(s.transport)}</div>` : ""}
+              <span class="time">${esc(s.time)}</span><span class="place">${esc(s.place)}</span>
+              <div class="activity">${esc(s.activity)}</div>
+            </li>`).join("")}
+          </ul>
+          <div class="stay">🛏️ 숙박: ${esc(day.accommodation)}</div>
+        </div>
       </div>`).join("")}
-    ${d.tips.length ? `<div class="card"><strong>여행 팁</strong><ul>${d.tips.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}`;
+    </div>
+    ${d.tips.length ? `<div class="tips"><strong>✈ 여행 팁</strong><ul>${d.tips.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}`;
 }
 
 // ---------- 기능 3: 지역 상세 ----------
@@ -258,9 +564,10 @@ $("#out-route").addEventListener("click", (e) => {
 
 async function openRegion(region) {
   currentRegion = region;
-  $("#drawer-title").textContent = "📍 " + region;
+  $("#drawer-title").textContent = region;
   $("#drawer").classList.add("open"); $("#overlay").classList.add("open");
   $("#drawer").setAttribute("aria-hidden", "false");
+  $("#drawer").scrollTop = 0;
   const body = $("#drawer-body");
   const key = region + "|" + routeContext.route;
   if (placeCache.has(key)) { body.innerHTML = renderPlace(placeCache.get(key)); return; }
@@ -272,23 +579,23 @@ async function openRegion(region) {
   } catch (err) { if (currentRegion === region) body.innerHTML = errorBox(err.message); }
 }
 
-function spotList(title, items, region) {
-  return `<h2>${title}</h2>${items.map((s) => `
+function spotList(title, pill, items, region) {
+  return `<h3>${title} <span class="pill">${pill}</span></h3>${items.map((s) => `
     <div class="spot">
-      <div class="spot-top"><span class="spot-name">${esc(s.name)}</span><span class="tag">${esc(s.category)}</span></div>
+      <div class="spot-top"><span class="spot-name">${esc(s.name)}</span><span class="tag2">${esc(s.category)}</span></div>
       <p>${esc(s.description)}</p>
-      <p class="tag">💰 ${esc(s.priceRange)}</p>
+      <p class="price">💰 ${esc(s.priceRange)}</p>
       <p class="tip">👉 ${esc(s.tip)}</p>
       <a class="map-link" target="_blank" rel="noopener" href="https://map.naver.com/p/search/${encodeURIComponent(region + " " + s.name)}">지도에서 보기 ↗</a>
     </div>`).join("")}`;
 }
 
 function renderPlace(d) {
-  return `<p>${esc(d.intro)}</p>
-    ${spotList("🛏️ 추천 숙소", d.stays, d.region)}
-    ${spotList("🍽️ 맛집", d.restaurants, d.region)}
-    ${spotList("📸 관광 스팟", d.attractions, d.region)}
-    <p class="hint">※ AI 추천이므로 영업 여부·가격은 방문 전 확인해 주세요.</p>`;
+  return `<p class="intro">${esc(d.intro)}</p>
+    ${spotList("🛏️ 추천 숙소", "STAY", d.stays, d.region)}
+    ${spotList("🍽️ 맛집", "EAT", d.restaurants, d.region)}
+    ${spotList("📸 관광 스팟", "SEE", d.attractions, d.region)}
+    <p class="note">※ AI 추천이므로 영업 여부·가격은 방문 전 확인해 주세요.</p>`;
 }
 
 function closeDrawer() {
