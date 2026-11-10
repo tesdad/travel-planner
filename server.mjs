@@ -37,7 +37,7 @@ function sendJson(res, status, obj) {
 
 const server = http.createServer(async (req, res) => {
   try {
-    const name = req.url.match(/^\/api\/(recommend|route|place)$/)?.[1];
+    const name = req.url.match(/^\/api\/(recommend|route|place|refine)$/)?.[1];
     if (req.method === "POST" && name) {
       const body = await readBody(req);
       const ip = clientIp(req.headers, req.socket.remoteAddress);

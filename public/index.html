@@ -151,6 +151,30 @@
   .tips ul { margin: 10px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 14.5px; }
   .tips li + li { margin-top: 4px; }
 
+  /* ---------- 루트 수정 ---------- */
+  #route-view { transition: opacity .2s; }
+  #route-view.refining { opacity: .4; pointer-events: none; }
+  .changes { margin-top: 40px; background: var(--accent-soft); border-radius: var(--radius); padding: 16px 18px; display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+  .changes .label { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .changes .req { font-size: 14px; color: var(--ink); font-weight: 600; margin-bottom: 6px; }
+  .changes ul { margin: 0; padding-left: 18px; font-size: 14px; color: var(--ink-2); }
+  .versions { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+  .versions button { border: 1px solid var(--line-strong); background: var(--card); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .versions button:disabled { opacity: .35; cursor: default; }
+  .versions button:not(:disabled):hover { border-color: var(--ink); }
+  .changes + .route-head { margin-top: 24px; }
+  .refine { position: sticky; bottom: 16px; z-index: 5; margin-top: 32px; background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line-strong); border-radius: 18px; padding: 12px; box-shadow: 0 12px 40px rgba(15,17,21,.12); }
+  .refine-chips { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+  .refine-chips::-webkit-scrollbar { display: none; }
+  .refine-chips button { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: 13px; color: var(--ink-2); cursor: pointer; transition: all .15s; }
+  .refine-chips button:hover { border-color: var(--ink); color: var(--ink); }
+  .refine-row { display: flex; gap: 8px; }
+  .refine-row .control { flex: 1; height: 48px; }
+  .refine-row .btn { height: 48px; }
+  .refine .rf-error { font-size: 13px; color: var(--warn); margin: 8px 4px 0; }
+  .refine .rf-error.wait { color: var(--muted); }
+  .btn .spinner { display: inline-block; width: 16px; height: 16px; margin: 0; border-width: 2px; border-color: rgba(255,255,255,.35); border-top-color: currentColor; }
+
   /* ---------- 드로어 ---------- */
   .overlay { position: fixed; inset: 0; background: rgba(10,12,16,.4); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 30; }
   .overlay.open { opacity: 1; pointer-events: auto; }
@@ -211,6 +235,9 @@
     .seg { width: 100%; }
     .seg button { flex: 1; }
     .timeline li { grid-template-columns: 52px 1fr; gap: 10px; }
+    .refine { bottom: 10px; padding: 10px; }
+    .refine-row .btn { padding: 0 16px; }
+    .refine-row .btn .label-long { display: none; }
     .nav-link.hide-sm { display: none; }
     #drawer-body { padding: 16px 16px 32px; }
     .drawer-head { padding: 16px; }
@@ -421,6 +448,8 @@ $("#out-recommend").addEventListener("click", (e) => {
 
 // ---------- 기능 2: 상세 루트 ----------
 let routeContext = { route: "", transport: "" };
+// 수정 이력: versions[i] = { route, request, changes }
+let routeState = null;
 
 $("#form-route").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -433,9 +462,101 @@ $("#form-route").addEventListener("submit", async (e) => {
   try {
     const data = await post("/api/route", f);
     routeContext = { route: f.route, transport: f.transport };
-    out.innerHTML = renderRoute(data);
+    routeState = { input: f, versions: [{ route: data, request: null, changes: null }], idx: 0 };
+    out.innerHTML = `<div id="route-view"></div>${refineBar()}`;
+    renderRouteView();
   } catch (err) { out.innerHTML = errorBox(err.message); }
   btn.disabled = false;
+});
+
+// ---------- 루트 수정/추가 요청 ----------
+const REFINE_SUGGESTIONS = ["일정을 더 여유롭게", "맛집을 더 추가해줘", "비 오는 날 대안 일정도", "첫날 출발을 늦춰줘", "숙소 지역을 바꿔줘", "아이와 함께 가기 좋게"];
+
+function refineBar() {
+  return `
+    <form class="refine" id="refine-form" autocomplete="off">
+      <div class="refine-chips">${REFINE_SUGGESTIONS.map((s) => `<button type="button" data-suggest="${esc(s)}">${esc(s)}</button>`).join("")}</div>
+      <div class="refine-row">
+        <div class="control"><input name="request" maxlength="300" placeholder="수정하거나 추가하고 싶은 내용을 적어주세요 · 예: 둘째 날 오후에 카페 추가" /></div>
+        <button class="btn" type="submit"><span class="label-long">수정하기</span><svg class="ico"><use href="#i-arrow"/></svg></button>
+      </div>
+      <div class="rf-error" hidden></div>
+    </form>`;
+}
+
+function renderRouteView() {
+  const { versions, idx } = routeState;
+  const v = versions[idx];
+  const banner = v.request ? `
+    <div class="changes">
+      <div>
+        <div class="label">수정 반영됨</div>
+        <div class="req">“${esc(v.request)}”</div>
+        <ul>${v.changes.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>
+      </div>
+      ${versionNav()}
+    </div>` : (versions.length > 1 ? `<div class="changes"><div><div class="label">처음 만든 루트</div></div>${versionNav()}</div>` : "");
+  $("#route-view").innerHTML = banner + renderRoute(v.route);
+}
+
+function versionNav() {
+  const { versions, idx } = routeState;
+  return `<div class="versions">
+    <button type="button" data-ver="-1" ${idx === 0 ? "disabled" : ""}>← 이전</button>
+    <span>버전 ${idx + 1} / ${versions.length}</span>
+    <button type="button" data-ver="1" ${idx === versions.length - 1 ? "disabled" : ""}>다음 →</button>
+  </div>`;
+}
+
+$("#out-route").addEventListener("click", (e) => {
+  const s = e.target.closest("[data-suggest]");
+  if (s) {
+    const input = $("#refine-form input[name=request]");
+    input.value = input.value.trim() ? `${input.value.trim()}, ${s.dataset.suggest}` : s.dataset.suggest;
+    input.focus();
+    return;
+  }
+  const ver = e.target.closest("[data-ver]");
+  if (ver && routeState) {
+    routeState.idx = Math.max(0, Math.min(routeState.versions.length - 1, routeState.idx + Number(ver.dataset.ver)));
+    renderRouteView();
+  }
+});
+
+$("#out-route").addEventListener("submit", async (e) => {
+  if (e.target.id !== "refine-form") return;
+  e.preventDefault();
+  const form = e.target;
+  const input = form.request;
+  const request = input.value.trim();
+  const errEl = form.querySelector(".rf-error");
+  if (!request || !routeState) return;
+  const btn = form.querySelector("button[type=submit]");
+  const btnHtml = btn.innerHTML;
+  btn.disabled = true; input.disabled = true;
+  errEl.textContent = "요청을 반영해 루트를 다시 짜는 중이에요 · 1분 정도 걸릴 수 있어요";
+  errEl.classList.add("wait"); errEl.hidden = false;
+  btn.innerHTML = `<span class="spinner"></span><span class="label-long">수정 중</span>`;
+  $("#route-view").classList.add("refining");
+  try {
+    const { input: base, versions, idx } = routeState;
+    const res = await post("/api/refine", {
+      current: versions[idx].route, request,
+      route: base.route, duration: base.duration, transport: base.transport,
+    });
+    routeState.versions = versions.slice(0, idx + 1); // 이전 버전에서 수정하면 이후 버전은 버림
+    routeState.versions.push({ route: res.route, request, changes: res.changes });
+    routeState.idx = routeState.versions.length - 1;
+    input.value = "";
+    errEl.hidden = true;
+    renderRouteView();
+    $("#route-view").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    errEl.textContent = err.message; errEl.hidden = false;
+  }
+  errEl.classList.remove("wait");
+  $("#route-view").classList.remove("refining");
+  btn.disabled = false; input.disabled = false; btn.innerHTML = btnHtml;
 });
 
 const regionBtn = (r) => `<button class="region" data-region="${esc(r)}">${icon("i-pin")}${esc(r)}</button>`;
