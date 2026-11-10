@@ -175,6 +175,59 @@
   .refine .rf-error.wait { color: var(--muted); }
   .btn .spinner { display: inline-block; width: 16px; height: 16px; margin: 0; border-width: 2px; border-color: rgba(255,255,255,.35); border-top-color: currentColor; }
 
+  /* ---------- 저장 · 공유 ---------- */
+  .route-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .btn-sub { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); background: var(--card); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: border-color .15s, background .15s; }
+  .btn-sub:hover { border-color: var(--ink); }
+  .btn-sub.primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .btn-sub:disabled { opacity: .5; cursor: wait; }
+  .btn-sub .ico { width: 16px; height: 16px; }
+  .share-box { margin-top: 14px; background: var(--surface); border-radius: 12px; padding: 14px; max-width: 560px; }
+  .share-box .row { display: flex; gap: 8px; }
+  .share-box input { flex: 1; min-width: 0; height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--card); font-size: 14px; }
+  .share-box .msg { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .share-box .msg.warn { color: var(--warn); }
+  .saved-note { font-size: 13px; color: var(--muted); margin-top: 40px; display: flex; align-items: center; gap: 6px; }
+  .saved-note + .route-head { margin-top: 12px; }
+
+  /* ---------- 내 여행 ---------- */
+  #my-trips { padding: 8px 0 0; }
+  #my-trips[hidden] { display: none; }
+  .trips-head { display: flex; align-items: baseline; justify-content: space-between; max-width: 760px; margin: 0 auto 12px; }
+  .trips-head h2 { font-size: 16px; font-weight: 700; margin: 0; }
+  .trips-head span { font-size: 13px; color: var(--muted); }
+  .trip-list { display: grid; gap: 8px; max-width: 760px; margin: 0 auto; }
+  .trip-item { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px 12px 16px; transition: border-color .15s; }
+  .trip-item:hover { border-color: var(--line-strong); }
+  .trip-item a { flex: 1; min-width: 0; text-decoration: none; }
+  .trip-item .t { font-weight: 600; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trip-item .m { font-size: 12.5px; color: var(--muted); }
+  .trip-item .rm { border: 0; background: none; color: var(--muted); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 15px; flex-shrink: 0; }
+  .trip-item .rm:hover { background: var(--surface); color: var(--ink); }
+  .print-only { display: none; }
+
+  /* ---------- 인쇄 · PDF ---------- */
+  @media print {
+    @page { margin: 14mm; }
+    :root { --bg: #fff; --card: #fff; --surface: #f4f5f7; --ink: #111; --ink-2: #333; --muted: #666; --line: #ddd; --line-strong: #ccc; --accent: #2f6bff; }
+    body { background: #fff; font-size: 12px; }
+    header.top, .hero, #my-trips, footer, .refine, .route-actions, .share-box, .region-bar + .hint, .versions, .overlay, .drawer, #out-recommend, .saved-note { display: none !important; }
+    #results { padding: 0; }
+    .wrap { max-width: none; padding: 0; }
+    .changes { background: none; border: 1px solid var(--line); margin-top: 0; }
+    .route-head { margin-top: 0; }
+    .route-head h2 { font-size: 22px; }
+    .region { border-color: var(--line); padding: 3px 9px; }
+    .day { break-inside: avoid; padding: 16px 0; grid-template-columns: 90px 1fr; }
+    .day-side .day-big { font-size: 28px; }
+    .timeline li { break-inside: avoid; padding: 6px 0; }
+    .place { font-size: 13px; }
+    .activity, .time { font-size: 12.5px; }
+    .transport { font-size: 11px; }
+    .tips { break-inside: avoid; }
+    .print-only { display: block; font-size: 11px; color: #666; margin-bottom: 12px; }
+  }
+
   /* ---------- 드로어 ---------- */
   .overlay { position: fixed; inset: 0; background: rgba(10,12,16,.4); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 30; }
   .overlay.open { opacity: 1; pointer-events: auto; }
@@ -255,6 +308,9 @@
     <symbol id="i-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14v-5l-2-5H7l-2 5z"/><circle cx="8" cy="17" r="1.6"/><circle cx="16" cy="17" r="1.6"/><path d="M5 12h14"/></symbol>
     <symbol id="i-bed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18V7M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.6"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
     <symbol id="i-plane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5 3 11l1.5-1.5 8 1L17 6a2 2 0 0 1 3 3l-4.5 4.5 1 8L15 23l-2.5-7.5"/></symbol>
   </defs>
 </svg>
@@ -333,6 +389,13 @@
           </div>
         </form>
       </div>
+    </div>
+  </section>
+
+  <section id="my-trips" hidden>
+    <div class="wrap">
+      <div class="trips-head"><h2>내 여행</h2><span>이 기기에 저장된 링크</span></div>
+      <div class="trip-list" id="trip-list"></div>
     </div>
   </section>
 
@@ -463,6 +526,7 @@ $("#form-route").addEventListener("submit", async (e) => {
     const data = await post("/api/route", f);
     routeContext = { route: f.route, transport: f.transport };
     routeState = { input: f, versions: [{ route: data, request: null, changes: null }], idx: 0 };
+    if (location.pathname !== "/") history.replaceState(null, "", "/"); // 공유 링크에서 새 루트를 만든 경우
     out.innerHTML = `<div id="route-view"></div>${refineBar()}`;
     renderRouteView();
   } catch (err) { out.innerHTML = errorBox(err.message); }
@@ -495,9 +559,123 @@ function renderRouteView() {
         <ul>${v.changes.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>
       </div>
       ${versionNav()}
-    </div>` : (versions.length > 1 ? `<div class="changes"><div><div class="label">처음 만든 루트</div></div>${versionNav()}</div>` : "");
-  $("#route-view").innerHTML = banner + renderRoute(v.route);
+    </div>` : (versions.length > 1 ? `<div class="changes"><div><div class="label">처음 만든 루트</div></div>${versionNav()}</div>`
+      : (routeState.loaded ? `<div class="saved-note">${icon("i-link")}저장된 여행 · ${esc(fmtDate(routeState.loaded.savedAt))} 저장</div>` : ""));
+  $("#route-view").innerHTML = banner + renderRoute(v.route, routeActions(v));
 }
+
+// ---------- 저장 · 공유 · PDF ----------
+const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }); } catch { return ""; } };
+const tripUrl = (id) => `${location.origin}/t/${id}`;
+
+function routeActions(v) {
+  return `
+    <div class="route-actions">
+      <button type="button" class="btn-sub primary" data-act="save">${icon("i-link")}${v.savedId ? "공유 링크 보기" : "링크로 저장"}</button>
+      <button type="button" class="btn-sub" data-act="print">${icon("i-print")}PDF로 저장</button>
+    </div>
+    ${v.savedId && v.showShare ? shareBox(v) : ""}`;
+}
+
+function shareBox(v) {
+  const url = tripUrl(v.savedId);
+  return `
+    <div class="share-box">
+      <div class="row">
+        <input readonly value="${esc(url)}" aria-label="공유 링크" />
+        <button type="button" class="btn-sub" data-act="copy">복사</button>
+        ${navigator.share ? `<button type="button" class="btn-sub" data-act="share">${icon("i-share")}공유</button>` : ""}
+      </div>
+      <div class="msg ${v.temporary ? "warn" : ""}">${v.temporary
+        ? "⚠ 저장소가 연결되지 않아 임시로 저장됐어요. 서버가 재시작되면 링크가 사라질 수 있어요."
+        : "이 링크로 누구나 이 루트를 볼 수 있어요. 내용을 수정한 뒤 다시 저장하면 새 링크가 만들어져요."}</div>
+    </div>`;
+}
+
+async function saveCurrent(btn) {
+  const v = routeState.versions[routeState.idx];
+  if (!v.savedId) {
+    btn.disabled = true;
+    try {
+      const res = await post("/api/trips", { route: v.route, input: routeState.input });
+      v.savedId = res.id; v.temporary = res.temporary;
+      rememberTrip({ id: res.id, title: v.route.title, days: v.route.days.length, savedAt: new Date().toISOString() });
+      history.replaceState(null, "", `/t/${res.id}`);
+    } catch (err) {
+      btn.disabled = false;
+      alert(err.message);
+      return;
+    }
+  }
+  v.showShare = true;
+  renderRouteView();
+  $("#route-view .share-box input")?.select();
+}
+
+$("#out-route").addEventListener("click", async (e) => {
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (!act || !routeState) return;
+  const v = routeState.versions[routeState.idx];
+  if (act === "save") return saveCurrent(e.target.closest("button"));
+  if (act === "print") return window.print();
+  if (act === "copy") {
+    const btn = e.target.closest("button");
+    try { await navigator.clipboard.writeText(tripUrl(v.savedId)); } catch { $("#route-view .share-box input").select(); document.execCommand("copy"); }
+    btn.textContent = "복사됨 ✓";
+    setTimeout(() => (btn.textContent = "복사"), 1500);
+  }
+  if (act === "share") navigator.share({ title: v.route.title, text: `${v.route.title} · tripmate`, url: tripUrl(v.savedId) }).catch(() => {});
+});
+
+// ---------- 내 여행 (이 기기에 저장한 링크 목록) ----------
+const TRIPS_KEY = "tripmate.trips";
+const readTrips = () => { try { return JSON.parse(localStorage.getItem(TRIPS_KEY)) || []; } catch { return []; } };
+const writeTrips = (list) => { try { localStorage.setItem(TRIPS_KEY, JSON.stringify(list.slice(0, 30))); } catch {} renderMyTrips(); };
+
+function rememberTrip(t) {
+  writeTrips([t, ...readTrips().filter((x) => x.id !== t.id)]);
+}
+
+function renderMyTrips() {
+  const list = readTrips();
+  $("#my-trips").hidden = list.length === 0;
+  $("#trip-list").innerHTML = list.map((t) => `
+    <div class="trip-item">
+      <a href="/t/${esc(t.id)}"><div class="t">${esc(t.title)}</div><div class="m">${t.days}일 · ${esc(fmtDate(t.savedAt))}</div></a>
+      <button class="rm" data-rm="${esc(t.id)}" title="목록에서 지우기" aria-label="목록에서 지우기">✕</button>
+    </div>`).join("");
+}
+$("#trip-list").addEventListener("click", (e) => {
+  const id = e.target.closest("[data-rm]")?.dataset.rm;
+  if (id) writeTrips(readTrips().filter((t) => t.id !== id));
+});
+renderMyTrips();
+
+// ---------- 공유 링크(/t/:id)로 들어온 경우 ----------
+async function loadSharedTrip(id) {
+  setMode("route");
+  const out = $("#out-route");
+  out.innerHTML = loading("저장된 여행을 불러오는 중이에요");
+  try {
+    const res = await fetch(`/api/trips/${encodeURIComponent(id)}`);
+    const trip = await res.json();
+    if (!res.ok) throw new Error(trip.error || "여행을 불러오지 못했어요.");
+    const form = $("#form-route");
+    for (const k of ["route", "duration", "extra"]) form[k].value = trip.input[k] || "";
+    if (trip.input.transport) form.transport.value = trip.input.transport;
+    routeContext = { route: trip.input.route || trip.route.title, transport: trip.input.transport };
+    routeState = { input: trip.input, versions: [{ route: trip.route, request: null, changes: null, savedId: id }], idx: 0, loaded: trip };
+    rememberTrip({ id, title: trip.route.title, days: trip.route.days.length, savedAt: trip.savedAt });
+    document.title = `${trip.route.title} · tripmate`;
+    out.innerHTML = `<div id="route-view"></div>${refineBar()}`;
+    renderRouteView();
+    scrollToResults();
+  } catch (err) {
+    out.innerHTML = errorBox(err.message);
+  }
+}
+const sharedId = location.pathname.match(/^\/t\/([A-Za-z0-9]+)\/?$/)?.[1];
+if (sharedId) loadSharedTrip(sharedId);
 
 function versionNav() {
   const { versions, idx } = routeState;
@@ -561,14 +739,16 @@ $("#out-route").addEventListener("submit", async (e) => {
 
 const regionBtn = (r) => `<button class="region" data-region="${esc(r)}">${icon("i-pin")}${esc(r)}</button>`;
 
-function renderRoute(d) {
+function renderRoute(d, extra = "") {
   return `
     <div class="route-head">
+      <div class="print-only">tripmate · ${esc(location.origin)}${routeState?.versions[routeState.idx]?.savedId ? `/t/${esc(routeState.versions[routeState.idx].savedId)}` : ""}</div>
       <div class="eyebrow">${d.days.length}일 여행 루트</div>
       <h2>${esc(d.title)}</h2>
       <p>${esc(d.overview)}</p>
       <div class="region-bar">${d.regions.map(regionBtn).join('<span class="arrow">→</span>')}</div>
       <div class="hint">지역을 누르면 추천 숙소 · 맛집 · 관광지를 지도와 함께 볼 수 있어요.</div>
+      ${extra}
     </div>
     <div class="days">${d.days.map((day) => `
       <div class="day">

@@ -13,6 +13,10 @@ services:
         sync: false
       - key: GOOGLE_MAPS_API_KEY
         sync: false
+      - key: KV_REST_API_URL
+        sync: false
+      - key: KV_REST_API_TOKEN
+        sync: false
       - key: RATE_LIMIT_PER_HOUR
         value: "20"
       - key: DAILY_LIMIT

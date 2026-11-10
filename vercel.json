@@ -5,7 +5,18 @@
   "installCommand": "npm ci",
   "outputDirectory": "public",
   "functions": {
-    "api/*.js": { "maxDuration": 120 }
+    "api/**/*.js": {
+      "maxDuration": 120
+    }
   },
-  "rewrites": [{ "source": "/healthz", "destination": "/api/healthz" }]
+  "rewrites": [
+    {
+      "source": "/healthz",
+      "destination": "/api/healthz"
+    },
+    {
+      "source": "/t/:id",
+      "destination": "/index.html"
+    }
+  ]
 }

@@ -6,6 +6,8 @@ import { extname, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPlanner } from "./lib/planner.mjs";
 import { checkLimit, clientIp, limitBackend } from "./lib/limit.mjs";
+import { saveTrip, getTrip } from "./lib/trips.mjs";
+import { redisReady } from "./lib/redis.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -45,11 +47,23 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, status, out);
     }
 
-    if (req.method === "GET" && req.url === "/healthz") return sendJson(res, 200, { ok: true });
+    // 루트 저장 · 불러오기
+    if (req.method === "POST" && req.url === "/api/trips") {
+      const { status, body: out } = await saveTrip(await readBody(req), clientIp(req.headers, req.socket.remoteAddress));
+      return sendJson(res, status, out);
+    }
+    const tripId = req.url.match(/^\/api\/trips\/([^/?]+)$/)?.[1];
+    if (req.method === "GET" && tripId) {
+      const { status, body: out } = await getTrip(tripId);
+      return sendJson(res, status, out);
+    }
+
+    if (req.method === "GET" && req.url === "/healthz") return sendJson(res, 200, { ok: true, storage: redisReady ? "redis" : "memory" });
 
     if (req.method === "GET") {
       const pathname = req.url.split("?")[0];
-      const path = pathname === "/" ? "/index.html" : pathname;
+      // 공유 링크(/t/:id)는 같은 페이지를 열고, 페이지가 주소를 읽어 여행을 불러옵니다
+      const path = pathname === "/" || /^\/t\/[A-Za-z0-9]+\/?$/.test(pathname) ? "/index.html" : pathname;
       if (path.includes("..")) return sendJson(res, 400, { error: "bad path" });
       const file = await readFile(join(__dirname, "public", path)).catch(() => null);
       if (!file) return sendJson(res, 404, { error: "not found" });
@@ -64,4 +78,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`여행 플래너 실행 중: http://localhost:${PORT} (사용량 제한: ${limitBackend})`));
+server.listen(PORT, () => console.log(`여행 플래너 실행 중: http://localhost:${PORT} (사용량 제한: ${limitBackend}, 저장소: ${redisReady ? "redis" : "memory(임시)"})`));

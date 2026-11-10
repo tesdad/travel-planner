@@ -5,6 +5,7 @@ Claude(claude-opus-5-5)를 이용한 여행 계획 웹앱.
 1. **여행지 추천** — 여행 스타일 + 기간 → 국내 3곳 / 해외 3곳 추천 (카드의 "이 여행지로 루트 짜기"로 ②에 바로 연결)
 2. **상세 루트** — 대략적인 루트 + 기간 + 이동 수단 → 일자별·시간대별 상세 일정
    - 결과 아래 입력창으로 **수정·추가 요청** (예: "둘째 날 오후에 카페 추가") → 전체 루트를 다시 맞춰 주고 바뀐 점을 요약, 이전 버전으로 되돌리기 가능
+   - **링크로 저장**: 짧은 공유 주소(`/t/xxxxxxxxxx`) 생성, 1년 보관 · **내 여행** 목록(이 기기) · **PDF로 저장**(인쇄용 화면)
 3. **지역 상세** — 루트 결과의 📍지역 버튼 클릭 → 추천 숙소·맛집·관광 스팟 (한 번 불러온 지역은 캐시)
 
 ## 지도 · 실제 장소 확인 (선택)
@@ -60,6 +61,17 @@ Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용�
 
 > Vercel 무료(Hobby) 플랜은 비상업적 용도만 허용됩니다.
 
+## 저장소 (공유 링크 · 사용량 제한)
+
+공유 링크 저장과 서버리스 환경의 사용량 제한에 **Upstash Redis**(무료 플랜 가능)를 사용합니다. Render와 Vercel에 **같은 값**을 넣으면 어느 주소에서 저장해도 양쪽에서 링크가 열립니다.
+
+| 환경변수 | 값 |
+|---|---|
+| `KV_REST_API_URL` (또는 `UPSTASH_REDIS_REST_URL`) | Upstash 데이터베이스의 REST URL |
+| `KV_REST_API_TOKEN` (또는 `UPSTASH_REDIS_REST_TOKEN`) | Upstash 데이터베이스의 REST Token |
+
+연결하지 않으면 서버 메모리에 **임시 저장**되며(서버 재시작 시 사라짐), 화면에 경고가 표시됩니다. `/healthz`의 `storage` 값으로 확인할 수 있습니다.
+
 ## 사용량 제한
 
 API 크레딧 보호를 위해 환경변수로 제한합니다.
@@ -75,6 +87,7 @@ Claude Console의 **Limits** 메뉴에서 월 지출 한도도 함께 설정해 
 
 - `lib/planner.mjs` — Claude 호출, JSON 스키마, 입력 검증 (공용)
 - `lib/places.mjs` — 카카오/구글 장소 조회로 AI 추천 장소 검증
+- `lib/trips.mjs`, `lib/redis.mjs` — 루트 저장·불러오기 (Upstash Redis)
 - `lib/limit.mjs` — 사용량 제한 (Upstash Redis 있으면 Redis, 없으면 메모리)
 - `server.mjs` — 일반 Node 서버 (로컬 · Render)
 - `api/*.js`, `lib/vercel.mjs`, `vercel.json` — Vercel 서버리스 함수
