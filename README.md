@@ -38,6 +38,16 @@ Claude(claude-opus-5-5)를 이용한 여행 계획 웹앱.
 
 무료 플랜은 15분간 접속이 없으면 잠들며, 다음 첫 접속 때 깨어나는 데 30~60초가 걸립니다.
 
+## 배포 (Vercel)
+
+1. [Vercel](https://vercel.com/new) 로그인 → **Add New → Project** → 이 저장소 **Import**
+2. **Environment Variables**에 `ANTHROPIC_API_KEY` 추가 → **Deploy** (설정은 `vercel.json`이 자동 적용)
+3. **사용량 제한용 저장소 연결 (권장)**: 프로젝트 → **Storage** → **Upstash for Redis** 생성·연결 → **Redeploy**
+
+Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용량 제한이 서버 인스턴스별로만 동작합니다. `/healthz`의 `rateLimit` 값이 `redis`면 정상 연결된 것입니다.
+
+> Vercel 무료(Hobby) 플랜은 비상업적 용도만 허용됩니다.
+
 ## 사용량 제한
 
 API 크레딧 보호를 위해 환경변수로 제한합니다.
@@ -51,5 +61,8 @@ Claude Console의 **Limits** 메뉴에서 월 지출 한도도 함께 설정해 
 
 ## 구조
 
-- `server.mjs` — Node 내장 http 서버 + API 3개(`/api/recommend`, `/api/route`, `/api/place`). 구조화 출력(JSON 스키마)으로 응답 형식을 고정.
-- `public/index.html` — 프론트엔드(바닐라 JS, 빌드 없음).
+- `lib/planner.mjs` — Claude 호출, JSON 스키마, 입력 검증 (공용)
+- `lib/limit.mjs` — 사용량 제한 (Upstash Redis 있으면 Redis, 없으면 메모리)
+- `server.mjs` — 일반 Node 서버 (로컬 · Render)
+- `api/*.js`, `lib/vercel.mjs`, `vercel.json` — Vercel 서버리스 함수
+- `public/index.html` — 프론트엔드 (바닐라 JS, 빌드 없음)
