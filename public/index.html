@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>여행 플래너</title>
+<style>
+  :root {
+    --bg: #f6f7fb; --card: #fff; --text: #1d2433; --muted: #6b7385; --line: #e3e6ee;
+    --accent: #2f6fed; --accent-soft: #e8f0ff; --warn: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+  header { padding: 28px 16px 8px; text-align: center; }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  main { max-width: 980px; margin: 0 auto; padding: 16px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab { flex: 1; padding: 12px; border: 1px solid var(--line); background: var(--card); border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 600; color: var(--muted); }
+  .tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .panel { display: none; } .panel.active { display: block; }
+  form { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; }
+  label { font-weight: 600; font-size: 14px; display: grid; gap: 6px; }
+  input, textarea, select { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--text); }
+  textarea { min-height: 70px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .chips-input { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip-btn { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+  .chip-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.primary { padding: 12px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+  button.primary:disabled { opacity: .6; cursor: wait; }
+  .status { margin: 16px 0; color: var(--muted); text-align: center; }
+  .error { color: var(--warn); }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -3px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  h2 { font-size: 19px; margin: 24px 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h3 { margin: 0 0 2px; font-size: 17px; }
+  .card .sub { color: var(--muted); font-size: 13px; }
+  .card ul { padding-left: 18px; margin: 8px 0; font-size: 14px; }
+  .meta { font-size: 13px; margin: 4px 0; }
+  .meta b { color: var(--muted); font-weight: 600; }
+  .fit { background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-top: 8px; }
+  .link-btn { margin-top: 10px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 13px; cursor: pointer; width: 100%; }
+  .region-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
+  .region { border: 1px solid var(--accent); color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .region:hover { background: var(--accent); color: #fff; }
+  .arrow { color: var(--muted); }
+  .day { margin-bottom: 14px; }
+  .day-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .day-num { background: var(--accent); color: #fff; border-radius: 6px; padding: 2px 8px; font-size: 13px; font-weight: 700; }
+  .timeline { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; padding: 4px 0 10px 16px; font-size: 14px; }
+  .timeline li::before { content: ""; position: absolute; left: -6px; top: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .time { font-weight: 700; margin-right: 6px; }
+  .transport { color: var(--muted); font-size: 12px; }
+  .stay { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .hint { font-size: 13px; color: var(--muted); }
+  /* drawer */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 10; }
+  .overlay.open { display: block; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(520px, 100%); background: var(--bg); z-index: 11; transform: translateX(100%); transition: transform .25s ease; overflow-y: auto; padding: 20px 16px; }
+  .drawer.open { transform: none; }
+  .drawer-head { display: flex; justify-content: space-between; align-items: center; }
+  .drawer-head h2 { margin: 0; }
+  .close { border: 0; background: none; font-size: 26px; cursor: pointer; color: var(--muted); }
+  .spot { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+  .spot-top { display: flex; justify-content: space-between; gap: 8px; }
+  .spot-name { font-weight: 700; }
+  .tag { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .spot p { margin: 4px 0; font-size: 14px; }
+  .spot .tip { font-size: 13px; color: var(--accent); }
+  .map-link { font-size: 12px; color: var(--muted); }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>✈️ 여행 플래너</h1>
+  <p>여행지 추천부터 상세 루트, 지역별 숙소·맛집·관광지까지</p>
+</header>
+<main>
+  <div class="tabs">
+    <button class="tab active" data-tab="recommend">① 여행지 추천</button>
+    <button class="tab" data-tab="route">② 상세 루트 짜기</button>
+  </div>
+
+  <!-- 기능 1 -->
+  <section class="panel active" id="panel-recommend">
+    <form id="form-recommend">
+      <label>여행 스타일
+        <div class="chips-input" id="style-chips"></div>
+        <input name="style" placeholder="예: 바다 보며 힐링, 맛집 탐방, 조용한 곳" />
+      </label>
+      <label>여행 기간
+        <input name="duration" placeholder="예: 3박 4일, 주말 1박 2일" required />
+      </label>
+      <button class="primary" type="submit">추천 받기</button>
+    </form>
+    <div id="out-recommend"></div>
+  </section>
+
+  <!-- 기능 2 -->
+  <section class="panel" id="panel-route">
+    <form id="form-route">
+      <label>대략적인 여행 루트
+        <textarea name="route" placeholder="예: 서울 출발 → 강릉 → 속초 → 서울" required></textarea>
+      </label>
+      <div class="row">
+        <label>여행 기간
+          <input name="duration" placeholder="예: 2박 3일" required />
+        </label>
+        <label>이동 수단
+          <select name="transport">
+            <option>자가용</option><option>렌터카</option><option>대중교통 (기차/버스)</option>
+            <option>비행기 + 현지 대중교통</option><option>비행기 + 렌터카</option><option>도보/자전거</option>
+          </select>
+        </label>
+      </div>
+      <label>추가 요청 (선택)
+        <input name="extra" placeholder="예: 아이 동반, 아침 늦게 시작, 카페 많이" />
+      </label>
+      <button class="primary" type="submit">상세 루트 만들기</button>
+    </form>
+    <div id="out-route"></div>
+  </section>
+</main>
+
+<!-- 기능 3: 지역 상세 -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head"><h2 id="drawer-title">지역</h2><button class="close" id="drawer-close" aria-label="닫기">×</button></div>
+  <div id="drawer-body"></div>
+</aside>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const loading = (msg) => `<div class="status"><span class="spinner"></span>${esc(msg)}</div>`;
+const errorBox = (msg) => `<div class="status error">⚠️ ${esc(msg)}</div>`;
+
+async function post(url, body) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({ error: "응답을 읽을 수 없습니다." }));
+  if (!res.ok) throw new Error(data.error || "오류가 발생했습니다.");
+  return data;
+}
+
+// 탭
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+  document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + name));
+}
+document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+// 스타일 칩
+const STYLES = ["힐링/휴양", "맛집 탐방", "자연/트레킹", "도시/쇼핑", "역사/문화", "액티비티", "가족 여행", "커플 여행", "가성비"];
+const chipWrap = $("#style-chips");
+const picked = new Set();
+STYLES.forEach((s) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip-btn"; b.textContent = s;
+  b.onclick = () => { picked.has(s) ? picked.delete(s) : picked.add(s); b.classList.toggle("on"); };
+  chipWrap.appendChild(b);
+});
+
+// ---------- 기능 1: 여행지 추천 ----------
+$("#form-recommend").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const style = [...picked, f.get("style").trim()].filter(Boolean).join(", ");
+  const duration = f.get("duration").trim();
+  const out = $("#out-recommend");
+  if (!style) { out.innerHTML = errorBox("여행 스타일을 선택하거나 입력해 주세요."); return; }
+  const btn = e.target.querySelector("button[type=submit]");
+  btn.disabled = true;
+  out.innerHTML = loading("여행지를 고르는 중... (30초 정도 걸릴 수 있어요)");
+  try {
+    const data = await post("/api/recommend", { style, duration });
+    out.innerHTML = section("🇰🇷 국내 추천", data.domestic, duration) + section("🌏 해외 추천", data.international, duration);
+  } catch (err) { out.innerHTML = errorBox(err.message); }
+  btn.disabled = false;
+});
+
+function section(title, items, duration) {
+  return `<h2>${title}</h2><div class="grid">${items.map((d) => `
+    <div class="card">
+      <h3>${esc(d.name)}</h3><div class="sub">${esc(d.region)}</div>
+      <p style="font-size:14px;margin:8px 0">${esc(d.summary)}</p>
+      <ul>${d.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
+      <div class="meta"><b>추천 시기</b> ${esc(d.bestSeason)}</div>
+      <div class="meta"><b>예상 경비</b> ${esc(d.estimatedBudget)}</div>
+      <div class="fit">💡 ${esc(d.whyFit)}</div>
+      <button class="link-btn" data-dest="${esc(d.name)}" data-duration="${esc(duration)}">이 여행지로 루트 짜기 →</button>
+    </div>`).join("")}</div>`;
+}
+
+$("#out-recommend").addEventListener("click", (e) => {
+  const b = e.target.closest(".link-btn");
+  if (!b) return;
+  const form = $("#form-route");
+  form.route.value = b.dataset.dest;
+  form.duration.value = b.dataset.duration;
+  showTab("route");
+  form.route.focus();
+});
+
+// ---------- 기능 2: 상세 루트 ----------
+let routeContext = { route: "", transport: "" };
+
+$("#form-route").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  const out = $("#out-route");
+  const btn = e.target.querySelector("button[type=submit]");
+  btn.disabled = true;
+  out.innerHTML = loading("상세 루트를 짜는 중... (1분 정도 걸릴 수 있어요)");
+  try {
+    const data = await post("/api/route", f);
+    routeContext = { route: f.route, transport: f.transport };
+    out.innerHTML = renderRoute(data);
+  } catch (err) { out.innerHTML = errorBox(err.message); }
+  btn.disabled = false;
+});
+
+const regionBtn = (r) => `<button class="region" data-region="${esc(r)}">📍 ${esc(r)}</button>`;
+
+function renderRoute(d) {
+  return `
+    <h2>${esc(d.title)}</h2>
+    <p>${esc(d.overview)}</p>
+    <div class="region-bar">${d.regions.map(regionBtn).join('<span class="arrow">→</span>')}</div>
+    <p class="hint">📍 지역을 누르면 추천 숙소 · 맛집 · 관광 스팟을 볼 수 있어요.</p>
+    ${d.days.map((day) => `
+      <div class="card day">
+        <div class="day-head"><span class="day-num">DAY ${day.day}</span><strong>${esc(day.theme)}</strong>${day.areas.map(regionBtn).join("")}</div>
+        <ul class="timeline">${day.schedule.map((s) => `
+          <li>
+            ${s.transport ? `<div class="transport">🚗 ${esc(s.transport)}</div>` : ""}
+            <span class="time">${esc(s.time)}</span><strong>${esc(s.place)}</strong>
+            <div>${esc(s.activity)}</div>
+          </li>`).join("")}
+        </ul>
+        <div class="stay">🛏️ 숙박: ${esc(day.accommodation)}</div>
+      </div>`).join("")}
+    ${d.tips.length ? `<div class="card"><strong>여행 팁</strong><ul>${d.tips.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}`;
+}
+
+// ---------- 기능 3: 지역 상세 ----------
+const placeCache = new Map();
+let currentRegion = null;
+
+$("#out-route").addEventListener("click", (e) => {
+  const b = e.target.closest(".region");
+  if (b) openRegion(b.dataset.region);
+});
+
+async function openRegion(region) {
+  currentRegion = region;
+  $("#drawer-title").textContent = "📍 " + region;
+  $("#drawer").classList.add("open"); $("#overlay").classList.add("open");
+  $("#drawer").setAttribute("aria-hidden", "false");
+  const body = $("#drawer-body");
+  const key = region + "|" + routeContext.route;
+  if (placeCache.has(key)) { body.innerHTML = renderPlace(placeCache.get(key)); return; }
+  body.innerHTML = loading("추천 장소를 찾는 중...");
+  try {
+    const data = await post("/api/place", { region, context: routeContext.route, transport: routeContext.transport });
+    placeCache.set(key, data);
+    if (currentRegion === region) body.innerHTML = renderPlace(data);
+  } catch (err) { if (currentRegion === region) body.innerHTML = errorBox(err.message); }
+}
+
+function spotList(title, items, region) {
+  return `<h2>${title}</h2>${items.map((s) => `
+    <div class="spot">
+      <div class="spot-top"><span class="spot-name">${esc(s.name)}</span><span class="tag">${esc(s.category)}</span></div>
+      <p>${esc(s.description)}</p>
+      <p class="tag">💰 ${esc(s.priceRange)}</p>
+      <p class="tip">👉 ${esc(s.tip)}</p>
+      <a class="map-link" target="_blank" rel="noopener" href="https://map.naver.com/p/search/${encodeURIComponent(region + " " + s.name)}">지도에서 보기 ↗</a>
+    </div>`).join("")}`;
+}
+
+function renderPlace(d) {
+  return `<p>${esc(d.intro)}</p>
+    ${spotList("🛏️ 추천 숙소", d.stays, d.region)}
+    ${spotList("🍽️ 맛집", d.restaurants, d.region)}
+    ${spotList("📸 관광 스팟", d.attractions, d.region)}
+    <p class="hint">※ AI 추천이므로 영업 여부·가격은 방문 전 확인해 주세요.</p>`;
+}
+
+function closeDrawer() {
+  currentRegion = null;
+  $("#drawer").classList.remove("open"); $("#overlay").classList.remove("open");
+  $("#drawer").setAttribute("aria-hidden", "true");
+}
+$("#drawer-close").onclick = closeDrawer;
+$("#overlay").onclick = closeDrawer;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+</script>
+</body>
+</html>

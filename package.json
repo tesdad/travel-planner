@@ -1,0 +1,19 @@
+{
+  "name": "travel-planner",
+  "version": "1.0.0",
+  "description": "AI 여행 플래너 - 여행지 추천, 상세 루트, 지역별 숙소·맛집·관광지",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0"
+  },
+  "engines": {
+    "node": ">=22.9"
+  }
+}
