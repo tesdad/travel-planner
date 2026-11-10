@@ -610,10 +610,15 @@ function realInfo(v) {
   return `<div class="real"><span class="ok">✓ ${src}에서 확인</span>${rating}<br/>📍 ${esc(v.address)}${v.phone ? ` · ☎ ${esc(v.phone)}` : ""}</div>`;
 }
 
-function spotList(key, title, pill, items, region, mapEnabled) {
+// 지도에서 확인되지 않은 장소용 검색 링크: 국내는 카카오맵, 해외는 구글 지도
+const searchLink = (q, isKorea) => isKorea
+  ? `https://map.kakao.com/link/search/${encodeURIComponent(q)}`
+  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+
+function spotList(key, title, pill, items, region, mapEnabled, isKorea) {
   return `<h3>${title} <span class="pill">${pill}</span></h3>${items.map((s, i) => {
     const v = s.verified;
-    const link = v?.url || `https://map.naver.com/p/search/${encodeURIComponent(region + " " + s.name)}`;
+    const link = v?.url || searchLink(region + " " + s.name, isKorea);
     return `
     <div class="spot ${v ? "has-pin" : ""}" data-pin="${key}-${i}">
       <div class="spot-top"><span class="spot-name">${v ? `<span class="no ${key}">${i + 1}</span>` : ""}${esc(s.name)}</span><span class="tag2">${esc(s.category)}</span></div>
@@ -622,7 +627,7 @@ function spotList(key, title, pill, items, region, mapEnabled) {
       <p>${esc(s.description)}</p>
       <p class="price">💰 ${esc(s.priceRange)}</p>
       <p class="tip">👉 ${esc(s.tip)}</p>
-      <a class="map-link" target="_blank" rel="noopener" href="${esc(link)}">${v ? (v.source === "kakao" ? "카카오맵에서 보기" : "구글 지도에서 보기") : "지도에서 검색"} ↗</a>
+      <a class="map-link" target="_blank" rel="noopener" href="${esc(link)}">${v ? (v.source === "kakao" ? "카카오맵에서 보기" : "구글 지도에서 보기") : (isKorea ? "카카오맵에서 검색" : "구글 지도에서 검색")} ↗</a>
     </div>`;
   }).join("")}`;
 }
@@ -632,7 +637,7 @@ function renderPlace(d) {
   return `${hasPins ? `<div id="place-map"></div>
       <div class="map-legend"><span><i style="background:var(--navy)"></i>숙소</span><span><i style="background:var(--orange)"></i>맛집</span><span><i style="background:#1e8f8a"></i>관광</span></div>` : ""}
     <p class="intro">${esc(d.intro)}</p>
-    ${SPOT_GROUPS.map(([k, t, p]) => spotList(k, t, p, d[k], d.region, d.mapEnabled)).join("")}
+    ${SPOT_GROUPS.map(([k, t, p]) => spotList(k, t, p, d[k], d.region, d.mapEnabled, d.isKorea !== false)).join("")}
     <p class="note">※ AI 추천이므로 영업 여부·가격은 방문 전 확인해 주세요. 지도 © OpenStreetMap</p>`;
 }
 
