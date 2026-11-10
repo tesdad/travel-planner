@@ -138,7 +138,10 @@ const safeFileName = (s) => (String(s).replace(/[\\/:*?"<>|\u0000-\u001F]/g, " "
 export async function downloadHwpx(route, opts = {}) {
   const [templates] = await Promise.all([loadTemplates(), window.JSZip ? null : loadScript(JSZIP_URL)]);
   const blob = await zipHwpx(window.JSZip, buildHwpxFiles(route, templates, opts))
-    .generateAsync({ type: "blob", compression: "DEFLATE", mimeType: "application/hwp+zip" });
+    // 내려받는 파일 형식은 일반 파일(octet-stream)로 둡니다. application/hwp+zip으로 두면
+    // 한글 뷰어가 있는 브라우저·확장 프로그램이 저장 대신 문서 뷰어로 열어 버립니다.
+    // (zip 안의 mimetype 파일은 그대로 application/hwp+zip이라 한글에서 여는 데는 영향 없음)
+    .generateAsync({ type: "blob", compression: "DEFLATE", mimeType: "application/octet-stream" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `${safeFileName(route.title)}.hwpx`;
