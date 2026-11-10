@@ -610,9 +610,9 @@ function realInfo(v) {
   return `<div class="real"><span class="ok">✓ ${src}에서 확인</span>${rating}<br/>📍 ${esc(v.address)}${v.phone ? ` · ☎ ${esc(v.phone)}` : ""}</div>`;
 }
 
-// 지도에서 확인되지 않은 장소용 검색 링크: 국내는 카카오맵, 해외는 구글 지도
+// 카카오/구글에서 확인되지 않은 장소용 검색 링크: 국내는 네이버 지도, 해외는 구글 지도
 const searchLink = (q, isKorea) => isKorea
-  ? `https://map.kakao.com/link/search/${encodeURIComponent(q)}`
+  ? `https://map.naver.com/p/search/${encodeURIComponent(q)}`
   : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
 function spotList(key, title, pill, items, region, mapEnabled, isKorea) {
@@ -627,7 +627,7 @@ function spotList(key, title, pill, items, region, mapEnabled, isKorea) {
       <p>${esc(s.description)}</p>
       <p class="price">💰 ${esc(s.priceRange)}</p>
       <p class="tip">👉 ${esc(s.tip)}</p>
-      <a class="map-link" target="_blank" rel="noopener" href="${esc(link)}">${v ? (v.source === "kakao" ? "카카오맵에서 보기" : "구글 지도에서 보기") : (isKorea ? "카카오맵에서 검색" : "구글 지도에서 검색")} ↗</a>
+      <a class="map-link" target="_blank" rel="noopener" href="${esc(link)}">${v ? (v.source === "kakao" ? "카카오맵에서 보기" : "구글 지도에서 보기") : (isKorea ? "네이버 지도에서 검색" : "구글 지도에서 검색")} ↗</a>
     </div>`;
   }).join("")}`;
 }

@@ -48,7 +48,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && req.url === "/healthz") return sendJson(res, 200, { ok: true });
 
     if (req.method === "GET") {
-      const path = req.url === "/" ? "/index.html" : req.url.split("?")[0];
+      const pathname = req.url.split("?")[0];
+      const path = pathname === "/" ? "/index.html" : pathname;
       if (path.includes("..")) return sendJson(res, 400, { error: "bad path" });
       const file = await readFile(join(__dirname, "public", path)).catch(() => null);
       if (!file) return sendJson(res, 404, { error: "not found" });
