@@ -82,6 +82,16 @@
   .control input, .control select { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 15px; height: 100%; }
   .control select { cursor: pointer; appearance: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a808c' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right center; padding-right: 18px; }
   .control input::placeholder { color: var(--muted); opacity: .75; }
+  .scope { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .scope-opt { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line-strong); border-radius: 14px; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; }
+  .scope-opt:hover { border-color: var(--ink); }
+  .scope-opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .scope-opt .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line-strong); transition: all .15s; }
+  .scope-opt strong { display: block; font-size: 15px; }
+  .scope-opt small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .scope-opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .scope-opt:has(input:checked) .dot { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 3px var(--card); }
+  .scope-opt:has(input:focus-visible) { box-shadow: 0 0 0 4px var(--accent-soft); }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .chip-btn { border: 1px solid var(--line-strong); background: transparent; border-radius: 999px; padding: 7px 14px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all .15s; }
   .chip-btn:hover { border-color: var(--ink); color: var(--ink); }
@@ -342,6 +352,10 @@
 
         <!-- 기능 1 -->
         <form class="panel on" id="form-recommend" data-panel="recommend">
+          <div class="scope" role="radiogroup" aria-label="여행 지역">
+            <label class="scope-opt"><input type="radio" name="scope" value="domestic" /><span class="dot"></span><span><strong>국내 여행</strong><small>국내 곳곳</small></span></label>
+            <label class="scope-opt"><input type="radio" name="scope" value="international" /><span class="dot"></span><span><strong>해외 여행</strong><small>한국 출발 기준</small></span></label>
+          </div>
           <div class="fields">
             <div class="field">
               <label for="r-style">여행 스타일</label>
@@ -353,8 +367,12 @@
             </div>
           </div>
           <div class="chips" id="style-chips"></div>
+          <div class="field" style="margin-top:14px">
+            <label for="r-extra">추가 요청 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
+            <div class="control"><input id="r-extra" name="extra" maxlength="500" placeholder="예: 북유럽을 중심으로 찾아줘" /></div>
+          </div>
           <div class="panel-foot">
-            <span class="hint">국내 3곳 · 해외 3곳을 추천해 드려요</span>
+            <span class="hint" id="r-hint">국내 또는 해외를 고르면 3곳을 추천해 드려요</span>
             <button class="btn" type="submit">추천 받기 <svg class="ico"><use href="#i-arrow"/></svg></button>
           </div>
         </form>
@@ -464,26 +482,41 @@ STYLES.forEach((s) => {
 const scrollToResults = () => $("#results").scrollIntoView({ behavior: "smooth", block: "start" });
 
 // ---------- 기능 1: 여행지 추천 ----------
+const SCOPE_UI = {
+  domestic: { label: "국내", hint: "국내 여행지 3곳을 추천해 드려요", placeholder: "예: 남해안 쪽 위주로, 기차로 갈 수 있는 곳" },
+  international: { label: "해외", hint: "해외 여행지 3곳을 추천해 드려요", placeholder: "예: 북유럽을 중심으로 찾아줘" },
+};
+$("#form-recommend").addEventListener("change", (e) => {
+  if (e.target.name !== "scope") return;
+  const ui = SCOPE_UI[e.target.value];
+  $("#r-hint").textContent = ui.hint;
+  $("#r-extra").placeholder = ui.placeholder;
+});
+
 $("#form-recommend").addEventListener("submit", async (e) => {
   e.preventDefault();
   const f = new FormData(e.target);
+  const scope = f.get("scope");
   const style = [...picked, f.get("style").trim()].filter(Boolean).join(", ");
   const duration = f.get("duration").trim();
+  const extra = f.get("extra").trim();
   const out = $("#out-recommend");
-  if (!style) { out.innerHTML = errorBox("여행 스타일을 선택하거나 입력해 주세요."); return; }
+  if (!scope) { out.innerHTML = errorBox("국내 여행과 해외 여행 중 하나를 선택해 주세요."); scrollToResults(); return; }
+  if (!style) { out.innerHTML = errorBox("여행 스타일을 선택하거나 입력해 주세요."); scrollToResults(); return; }
   const btn = e.target.querySelector("button[type=submit]");
   btn.disabled = true;
   out.innerHTML = loading("여행지를 고르는 중이에요 · 30초 정도 걸려요");
   scrollToResults();
   try {
-    const data = await post("/api/recommend", { style, duration });
-    out.innerHTML = section("국내 추천", "국내", data.domestic, duration) + section("해외 추천", "해외", data.international, duration);
+    const data = await post("/api/recommend", { style, duration, scope, ...(extra && { extra }) });
+    const { label } = SCOPE_UI[scope];
+    out.innerHTML = section(`${label} 추천`, label, data.destinations, duration, extra);
   } catch (err) { out.innerHTML = errorBox(err.message); }
   btn.disabled = false;
 });
 
-function section(title, tag, items, duration) {
-  return `<div class="sec-title"><h2>${title}</h2><span>${items.length}곳</span></div>
+function section(title, tag, items, duration, extra = "") {
+  return `<div class="sec-title"><h2>${title}</h2><span>${items.length}곳${extra ? ` · “${esc(extra)}”` : ""}</span></div>
   <div class="grid">${items.map((d, i) => `
     <article class="card">
       <div class="card-top"><span>${tag} · ${esc(d.region)}</span><span class="idx">0${i + 1}</span></div>
