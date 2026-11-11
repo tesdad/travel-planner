@@ -9,7 +9,7 @@ const NS = 'xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:hp="http://w
 const XML_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>';
 
 // header.xml에 정의된 스타일 번호
-// 글꼴: 제목(title, dayHead)과 볼드(th, strong)는 함초롬돋움, 일반 본문(body, muted)은 신명조
+// 글꼴: 제목(title, dayHead)과 볼드(th, strong)는 함초롬돋움, 일반 본문(body, muted)은 바탕체
 const CHAR = { base: 0, title: 7, dayHead: 8, body: 9, muted: 10, th: 11, strong: 12 };
 const PARA = { body: 20, dayHead: 21, cell: 22, cellCenter: 23, title: 24 };
 const FILL = { cell: 3, th: 4 };
