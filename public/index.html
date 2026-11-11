@@ -631,11 +631,34 @@ $("#out-route").addEventListener("click", async (e) => {
 });
 
 // 한글(HWPX) 파일로 저장 - 처음 누를 때만 /hwpx.js 와 zip 도구를 불러옵니다
+const hwpxFileName = (title) => `${String(title).replace(/[\\/:*?"<>|\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "여행 루트"}.hwpx`;
+
 async function saveHwpx(btn, v) {
+  const fileName = hwpxFileName(v.route.title);
+  // 크롬·엣지: 저장 대화상자로 고른 파일에 바로 씁니다. 브라우저 다운로드를 거치지 않으므로
+  // 한글 뷰어 확장 프로그램이 파일을 가로채 새 창에서 열려다 "URL을 열 수 없음"이 뜨는 일이 없습니다.
+  // 대화상자는 클릭 직후에 열어야 하므로 파일을 만들기 전에 먼저 엽니다.
+  let handle = null;
+  if (typeof window.showSaveFilePicker === "function") {
+    try {
+      handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description: "한글 문서 (HWPX)", accept: { "application/octet-stream": [".hwpx"] } }],
+      });
+    } catch (err) {
+      if (err.name === "AbortError") return; // 사용자가 취소
+      handle = null; // 그 밖의 이유로 대화상자를 못 열면 일반 다운로드로
+    }
+  }
+  const label = btn.innerHTML;
   btn.disabled = true;
   try {
     const { downloadHwpx } = await import("/hwpx.js");
-    await downloadHwpx(v.route, { link: v.savedId ? tripUrl(v.savedId) : "" });
+    await downloadHwpx(v.route, { link: v.savedId ? tripUrl(v.savedId) : "", fileName, handle });
+    if (handle) {
+      btn.innerHTML = `${icon("i-doc")}저장됨 ✓`;
+      setTimeout(() => { if (btn.isConnected) btn.innerHTML = label; }, 1500);
+    }
   } catch (err) {
     console.error(err);
     alert(err.message || "HWPX 파일을 만들지 못했어요.");

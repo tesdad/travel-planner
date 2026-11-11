@@ -133,19 +133,28 @@ const loadTemplates = () => (templatesPromise ??= Promise.all(TEMPLATE_FILES.map
   return [f, await res.text()];
 })).then(Object.fromEntries).catch((err) => { templatesPromise = null; throw err; }));
 
-const safeFileName = (s) => (String(s).replace(/[\\/:*?"<>|\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "여행 루트");
-
-/** 브라우저에서 HWPX 파일을 만들어 내려받기 */
-export async function downloadHwpx(route, opts = {}) {
+/**
+ * 브라우저에서 HWPX 파일을 만들어 저장
+ * - handle(저장 대화상자에서 고른 파일)이 있으면 그 파일에 바로 씁니다. 브라우저 다운로드를 거치지 않아
+ *   한글 뷰어 확장 프로그램이 가로채 새 창에서 열려다 실패하는 일이 없습니다.
+ * - 없으면(사파리·모바일 등) 일반 다운로드로 내려받습니다.
+ */
+export async function downloadHwpx(route, { link = "", fileName = "여행 루트.hwpx", handle = null } = {}) {
   const [templates] = await Promise.all([loadTemplates(), window.JSZip ? null : loadScript(JSZIP_URL)]);
-  const blob = await zipHwpx(window.JSZip, buildHwpxFiles(route, templates, opts))
-    // 내려받는 파일 형식은 일반 파일(octet-stream)로 둡니다. application/hwp+zip으로 두면
-    // 한글 뷰어가 있는 브라우저·확장 프로그램이 저장 대신 문서 뷰어로 열어 버립니다.
+  const blob = await zipHwpx(window.JSZip, buildHwpxFiles(route, templates, { link }))
+    // 파일 형식은 일반 파일(octet-stream)로 둡니다. application/hwp+zip이면 일부 브라우저가 저장 대신 뷰어로 엽니다.
     // (zip 안의 mimetype 파일은 그대로 application/hwp+zip이라 한글에서 여는 데는 영향 없음)
     .generateAsync({ type: "blob", compression: "DEFLATE", mimeType: "application/octet-stream" });
+
+  if (handle) {
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
+  }
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `${safeFileName(route.title)}.hwpx`;
+  a.download = fileName;
   document.body.append(a);
   a.click();
   a.remove();
