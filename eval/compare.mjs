@@ -4,6 +4,7 @@
 //   npm run compare -- --yes              → 실제 실행
 //   npm run compare -- --yes --models haiku,deepseek --features place
 //   npm run compare -- --report eval/results/2026-11-14T10-00-00   → 저장된 결과로 리포트만 다시 생성
+//   npm run compare -- --yes --models deepseek --into eval/results/2026-11-14T10-00-00   → 특정 모델만 다시 돌려 기존 리포트에 합치기
 //
 // 결과: eval/results/<시각>/results.json, report.html
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -65,8 +66,10 @@ if (!args.yes) {
 }
 
 // ---------- 실행 ----------
-const startedAt = new Date();
-const outDir = join(here, "results", startedAt.toISOString().slice(0, 19).replace(/:/g, "-"));
+// --into <폴더>: 이전 결과에 합치기 (이번에 돌린 모델의 이전 결과는 교체, 리포트 별점 유지)
+const previous = args.into ? JSON.parse(await readFile(join(String(args.into), "results.json"), "utf8")) : null;
+const startedAt = previous ? new Date(previous.startedAt) : new Date();
+const outDir = previous ? String(args.into) : join(here, "results", startedAt.toISOString().slice(0, 19).replace(/:/g, "-"));
 await mkdir(outDir, { recursive: true });
 
 let done = 0;
@@ -94,17 +97,26 @@ async function work(job) {
 const queue = [...jobs];
 await Promise.all(Array.from({ length: concurrency }, async () => { while (queue.length) await work(queue.shift()); }));
 
-const payload = {
-  startedAt: startedAt.toISOString(),
-  models: Object.fromEntries(models.map((m) => [m, MODELS[m]])),
-  features,
-  inputs: Object.fromEntries(features.map((f) => [f, inputs[f].slice(0, limit)])),
-  placesStatus,
-  results,
-};
+const runCost = results.reduce((s, r) => s + (r.cost || 0), 0);
+const payload = previous
+  ? {
+      ...previous,
+      models: { ...previous.models, ...Object.fromEntries(models.map((m) => [m, MODELS[m]])) },
+      results: [
+        ...previous.results.filter((r) => !(models.includes(r.model) && features.includes(r.feature))),
+        ...results,
+      ],
+    }
+  : {
+      startedAt: startedAt.toISOString(),
+      models: Object.fromEntries(models.map((m) => [m, MODELS[m]])),
+      features,
+      inputs: Object.fromEntries(features.map((f) => [f, inputs[f].slice(0, limit)])),
+      placesStatus,
+      results,
+    };
 await writeFile(join(outDir, "results.json"), JSON.stringify(payload, null, 1));
 await writeFile(join(outDir, "report.html"), buildReport(payload));
 
-const total = results.reduce((s, r) => s + (r.cost || 0), 0);
-console.log(`\n완료: 실제 비용 $${total.toFixed(3)} (약 ${Math.round(total * 1400).toLocaleString()}원)`);
+console.log(`\n완료: 이번 실행 비용 $${runCost.toFixed(3)} (약 ${Math.round(runCost * 1400).toLocaleString()}원)${previous ? " · 이전 결과에 합침" : ""}`);
 console.log(`리포트: ${join(outDir, "report.html")}\n`);
