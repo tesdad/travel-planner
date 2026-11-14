@@ -285,6 +285,17 @@
   /* ---------- 푸터 ---------- */
   footer { border-top: 1px solid var(--line); padding: 28px 0 36px; font-size: 13px; color: var(--muted); }
   footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .privacy { flex-basis: 100%; margin-top: 4px; }
+  .privacy summary { cursor: pointer; width: fit-content; color: var(--ink-2); list-style: none; }
+  .privacy summary::-webkit-details-marker { display: none; }
+  .privacy summary::after { content: " ▾"; font-size: 11px; }
+  .privacy[open] summary::after { content: " ▴"; }
+  .privacy summary:hover { color: var(--ink); }
+  .privacy .lead { margin: 12px 0 10px; color: var(--ink-2); }
+  .privacy dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; max-width: 760px; line-height: 1.6; }
+  .privacy dt { font-weight: 600; color: var(--ink-2); }
+  .privacy dd { margin: 0; }
+  @media (max-width: 560px) { .privacy dl { grid-template-columns: 1fr; gap: 2px; } .privacy dd { margin-bottom: 8px; } }
 
   /* ---------- 반응형 ---------- */
   @media (max-width: 900px) {
@@ -436,6 +447,18 @@
   <div class="wrap">
     <span>© tripmate</span>
     <span>AI 추천 결과이므로 영업 여부·가격은 방문 전 확인해 주세요.</span>
+    <details class="privacy" id="privacy">
+      <summary>개인정보 안내</summary>
+      <p class="lead">회원가입 없이 이용하며, 개인정보는 서비스에 꼭 필요한 만큼만 최소한으로 처리합니다.</p>
+      <dl>
+        <dt>계정</dt><dd>이름·이메일·연락처를 받지 않습니다.</dd>
+        <dt>입력 내용</dt><dd>여행 일정 생성을 위해 Anthropic(미국)의 AI로 전송됩니다. 개인정보는 입력하지 마세요.</dd>
+        <dt>공유 링크</dt><dd>루트와 기본 정보(경로·기간·이동 수단)만 90일간 보관하며, 저장한 기기에서 ‘공유 중지’로 즉시 삭제할 수 있습니다.</dd>
+        <dt>내 여행 목록</dt><dd>이 기기의 브라우저에만 저장됩니다.</dd>
+        <dt>IP 주소</dt><dd>과도한 사용을 막기 위해 복원할 수 없는 형태로 1시간만 처리합니다. 서비스 운영사(Render·Vercel·Upstash, 미국)의 접속 기록에도 남을 수 있습니다.</dd>
+        <dt>쿠키</dt><dd>광고·분석용 쿠키를 사용하지 않습니다.</dd>
+      </dl>
+    </details>
   </div>
 </footer>
 
