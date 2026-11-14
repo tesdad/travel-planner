@@ -98,6 +98,7 @@
   .chip-btn.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
   .panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
   .panel-foot .hint { font-size: 13px; color: var(--muted); }
+  .field-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: transform .15s, opacity .15s; }
   .btn:hover { transform: translateY(-1px); }
   .btn:disabled { opacity: .5; cursor: wait; transform: none; }
@@ -214,6 +215,9 @@
   .trip-item .m { font-size: 12.5px; color: var(--muted); }
   .trip-item .rm { border: 0; background: none; color: var(--muted); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 15px; flex-shrink: 0; }
   .trip-item .rm:hover { background: var(--surface); color: var(--ink); }
+  .trip-item .stop { border: 1px solid var(--line); background: none; color: var(--muted); height: 30px; padding: 0 10px; border-radius: 8px; cursor: pointer; font-size: 12.5px; flex-shrink: 0; }
+  .trip-item .stop:hover { border-color: var(--line-strong); color: var(--ink); }
+  .share-box .msg button { border: 0; background: none; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; }
   .print-only { display: none; }
 
   /* ---------- 인쇄 · PDF ---------- */
@@ -370,6 +374,7 @@
           <div class="field" style="margin-top:14px">
             <label for="r-extra">추가 요청 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
             <div class="control"><input id="r-extra" name="extra" maxlength="500" placeholder="예: 북유럽을 중심으로 찾아줘" /></div>
+            <div class="field-note">이름·연락처 같은 개인정보는 적지 마세요. 입력 내용은 일정 생성을 위해 AI로 전송돼요.</div>
           </div>
           <div class="panel-foot">
             <span class="hint" id="r-hint">국내 또는 해외를 고르면 3곳을 추천해 드려요</span>
@@ -400,7 +405,8 @@
           </div>
           <div class="field" style="margin-top:14px">
             <label for="t-extra">추가 요청 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
-            <div class="control"><input id="t-extra" name="extra" placeholder="예: 아이 동반, 아침 늦게 시작, 카페 많이" /></div>
+            <div class="control"><input id="t-extra" name="extra" maxlength="500" placeholder="예: 아이 동반, 아침 늦게 시작, 카페 많이" /></div>
+            <div class="field-note">이름·연락처 같은 개인정보는 적지 마세요. 입력 내용은 일정 생성을 위해 AI로 전송돼요.</div>
           </div>
           <div class="panel-foot">
             <span class="hint">시간대별 일정과 이동 방법까지 짜 드려요</span>
@@ -623,7 +629,7 @@ function shareBox(v) {
       </div>
       <div class="msg ${v.temporary ? "warn" : ""}">${v.temporary
         ? "⚠ 저장소가 연결되지 않아 임시로 저장됐어요. 서버가 재시작되면 링크가 사라질 수 있어요."
-        : "이 링크로 누구나 이 루트를 볼 수 있어요. 내용을 수정한 뒤 다시 저장하면 새 링크가 만들어져요."}</div>
+        : `이 링크로 누구나 이 루트를 볼 수 있어요. 링크는 90일 동안 유지되고, 내용을 수정한 뒤 다시 저장하면 새 링크가 만들어져요.${deleteKeyOf(v.savedId) ? ` <button type="button" data-act="unshare">공유 중지</button>` : ""}`}</div>
     </div>`;
 }
 
@@ -632,9 +638,11 @@ async function saveCurrent(btn) {
   if (!v.savedId) {
     btn.disabled = true;
     try {
-      const res = await post("/api/trips", { route: v.route, input: routeState.input });
+      // 자유 입력(추가 요청)은 보내지 않음 — 공유 링크에 개인정보가 남지 않도록
+      const { route, duration, transport } = routeState.input || {};
+      const res = await post("/api/trips", { route: v.route, input: { route, duration, transport } });
       v.savedId = res.id; v.temporary = res.temporary;
-      rememberTrip({ id: res.id, title: v.route.title, days: v.route.days.length, savedAt: new Date().toISOString() });
+      rememberTrip({ id: res.id, title: v.route.title, days: v.route.days.length, savedAt: new Date().toISOString(), deleteKey: res.deleteKey });
       history.replaceState(null, "", `/t/${res.id}`);
     } catch (err) {
       btn.disabled = false;
@@ -660,6 +668,7 @@ $("#out-route").addEventListener("click", async (e) => {
     btn.textContent = "복사됨 ✓";
     setTimeout(() => (btn.textContent = "복사"), 1500);
   }
+  if (act === "unshare") return unshareTrip(v.savedId);
   if (act === "share") navigator.share({ title: v.route.title, text: `${v.route.title} · tripmate`, url: tripUrl(v.savedId) }).catch(() => {});
 });
 
@@ -706,7 +715,28 @@ const readTrips = () => { try { return JSON.parse(localStorage.getItem(TRIPS_KEY
 const writeTrips = (list) => { try { localStorage.setItem(TRIPS_KEY, JSON.stringify(list.slice(0, 30))); } catch {} renderMyTrips(); };
 
 function rememberTrip(t) {
-  writeTrips([t, ...readTrips().filter((x) => x.id !== t.id)]);
+  const prev = readTrips().find((x) => x.id === t.id);
+  writeTrips([{ ...t, deleteKey: t.deleteKey || prev?.deleteKey }, ...readTrips().filter((x) => x.id !== t.id)]);
+}
+const deleteKeyOf = (id) => readTrips().find((t) => t.id === id)?.deleteKey;
+
+// 공유 중지: 서버에서 링크를 삭제 (저장할 때 받은 삭제 키가 이 기기에 있을 때만 가능)
+async function unshareTrip(id) {
+  const key = deleteKeyOf(id);
+  if (!key) return;
+  if (!confirm("이 여행의 공유 링크를 삭제할까요?\n링크를 받은 사람도 더 이상 볼 수 없고, 되돌릴 수 없어요.")) return;
+  try {
+    const res = await fetch(`/api/trips/${encodeURIComponent(id)}`, { method: "DELETE", headers: { "X-Delete-Key": key } });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || "삭제하지 못했어요.");
+  } catch (err) {
+    alert(err.message);
+    return;
+  }
+  writeTrips(readTrips().filter((t) => t.id !== id));
+  if (routeState) for (const v of routeState.versions) if (v.savedId === id) { v.savedId = null; v.showShare = false; }
+  if (location.pathname === `/t/${id}`) history.replaceState(null, "", "/");
+  if (routeState && $("#route-view")) renderRouteView();
 }
 
 function renderMyTrips() {
@@ -715,12 +745,17 @@ function renderMyTrips() {
   $("#trip-list").innerHTML = list.map((t) => `
     <div class="trip-item">
       <a href="/t/${esc(t.id)}"><div class="t">${esc(t.title)}</div><div class="m">${t.days}일 · ${esc(fmtDate(t.savedAt))}</div></a>
+      ${t.deleteKey ? `<button class="stop" data-unshare="${esc(t.id)}" title="공유 링크 삭제">공유 중지</button>` : ""}
       <button class="rm" data-rm="${esc(t.id)}" title="목록에서 지우기" aria-label="목록에서 지우기">✕</button>
     </div>`).join("");
 }
 $("#trip-list").addEventListener("click", (e) => {
+  const stop = e.target.closest("[data-unshare]")?.dataset.unshare;
+  if (stop) return unshareTrip(stop);
   const id = e.target.closest("[data-rm]")?.dataset.rm;
-  if (id) writeTrips(readTrips().filter((t) => t.id !== id));
+  if (!id) return;
+  if (deleteKeyOf(id) && !confirm("목록에서 지우면 이 기기에서 공유를 중지할 수 없게 돼요. 링크는 90일 뒤 자동으로 사라져요.\n목록에서 지울까요?")) return;
+  writeTrips(readTrips().filter((t) => t.id !== id));
 });
 renderMyTrips();
 

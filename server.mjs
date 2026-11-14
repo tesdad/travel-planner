@@ -6,7 +6,7 @@ import { extname, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPlanner } from "./lib/planner.mjs";
 import { checkLimit, clientIp, limitBackend } from "./lib/limit.mjs";
-import { saveTrip, getTrip } from "./lib/trips.mjs";
+import { saveTrip, getTrip, deleteTrip } from "./lib/trips.mjs";
 import { redisReady } from "./lib/redis.mjs";
 import { usageEndpoint } from "./lib/admin.mjs";
 
@@ -56,6 +56,10 @@ const server = http.createServer(async (req, res) => {
     const tripId = req.url.match(/^\/api\/trips\/([^/?]+)$/)?.[1];
     if (req.method === "GET" && tripId) {
       const { status, body: out } = await getTrip(tripId);
+      return sendJson(res, status, out);
+    }
+    if (req.method === "DELETE" && tripId) {
+      const { status, body: out } = await deleteTrip(tripId, req.headers["x-delete-key"]);
       return sendJson(res, status, out);
     }
 
