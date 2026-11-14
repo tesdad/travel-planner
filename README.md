@@ -81,6 +81,20 @@ Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용�
 - **사고량 조절**: 여행지 추천과 지역 가이드는 `effort: low`, 루트와 수정은 `medium`.
 - 모델 가격은 `lib/usage.mjs`의 `PRICES`에서 관리합니다.
 
+## 모델 비교 실험
+
+같은 입력(`eval/inputs.json`)을 Claude Opus·Sonnet·Haiku와 DeepSeek에 보내 품질·속도·비용을 비교합니다. 앱과 **똑같은 프롬프트·스키마**(`lib/planner.mjs`의 `TASKS`)를 사용합니다.
+
+```bash
+npm run compare            # 실행 계획과 예상 비용만 출력 (API 호출 없음)
+npm run compare -- --yes   # 실제 실행 → eval/results/<시각>/report.html
+npm run compare -- --yes --models haiku,deepseek --features place --limit 3
+```
+
+- 측정: 형식 통과율(스키마 검사), 평균 시간, 토큰, 기능별 비용, **여행 1건 비용**, **장소 실재율**(카카오·구글로 확인)
+- 리포트: 입력별 결과를 나란히 비교, **블라인드 모드**(모델 이름 숨김)로 별점 평가
+- DeepSeek는 `.env`의 `DEEPSEEK_API_KEY` 필요. 가격은 `DEEPSEEK_PRICE_IN` / `DEEPSEEK_PRICE_OUT`로 조정
+
 ## 사용량 제한
 
 API 크레딧 보호를 위해 환경변수로 제한합니다.

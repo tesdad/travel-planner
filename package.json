@@ -4,7 +4,8 @@
   "description": "AI 여행 플래너 - 여행지 추천, 상세 루트, 지역별 숙소·맛집·관광지",
   "main": "server.mjs",
   "scripts": {
-    "start": "node --env-file-if-exists=.env server.mjs"
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "compare": "node --env-file-if-exists=.env eval/compare.mjs"
   },
   "keywords": [],
   "author": "",

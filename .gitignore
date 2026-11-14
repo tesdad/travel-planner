@@ -10,3 +10,6 @@ node_modules/
 .DS_Store
 .vscode/
 .idea/
+
+# 모델 비교 실험 결과 (로컬 전용)
+eval/results/

@@ -1,0 +1,22 @@
+{
+  "recommend": [
+    { "id": "rec-dom-healing", "style": "힐링/휴양, 맛집 탐방", "duration": "2박 3일", "scope": "domestic", "extra": "" },
+    { "id": "rec-dom-family", "style": "가족 여행, 자연/트레킹", "duration": "1박 2일", "scope": "domestic", "extra": "초등학생 아이 둘과 함께, 서울에서 차로 3시간 이내" },
+    { "id": "rec-intl-city", "style": "도시/쇼핑, 맛집 탐방", "duration": "3박 4일", "scope": "international", "extra": "" },
+    { "id": "rec-intl-couple", "style": "커플 여행, 역사/문화", "duration": "5박 6일", "scope": "international", "extra": "유럽 쪽이면 좋겠어요" }
+  ],
+  "route": [
+    { "id": "route-gangwon-car", "route": "서울 → 강릉 → 속초 → 서울", "duration": "2박 3일", "transport": "자가용", "extra": "" },
+    { "id": "route-busan-public", "route": "부산역 → 해운대 → 감천문화마을 → 부산역", "duration": "1박 2일", "transport": "대중교통 (기차/버스)", "extra": "아침 늦게 시작" },
+    { "id": "route-kansai", "route": "오사카 → 교토 → 나라 → 오사카", "duration": "3박 4일", "transport": "비행기 + 현지 대중교통", "extra": "" }
+  ],
+  "place": [
+    { "id": "place-sokcho", "region": "속초" },
+    { "id": "place-gyeongju", "region": "경주" },
+    { "id": "place-jeonju", "region": "전주" },
+    { "id": "place-yeosu", "region": "여수" },
+    { "id": "place-seogwipo", "region": "제주 서귀포" },
+    { "id": "place-kyoto", "region": "교토" },
+    { "id": "place-danang", "region": "다낭" }
+  ]
+}
