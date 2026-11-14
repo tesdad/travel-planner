@@ -73,6 +73,14 @@ Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용�
 
 연결하지 않으면 서버 메모리에 **임시 저장**되며(서버 재시작 시 사라짐), 화면에 경고가 표시됩니다. `/healthz`의 `storage` 값으로 확인할 수 있습니다.
 
+## AI 비용 관리
+
+- **사용량 기록**: AI 호출마다 실제 토큰 수로 비용을 계산해 서버 로그(`[usage] ...`)에 남기고, 하루 단위 합계를 저장합니다.
+- **관리자 페이지**: `/admin.html`에서 `ADMIN_TOKEN`을 입력하면 기능별 호출 수, 캐시 비율, 평균 비용을 볼 수 있습니다.
+- **결과 캐시**: 지역 가이드(14일)와 여행지 추천(7일)은 같은 질문이면 저장된 답을 돌려줍니다(비용 0, 사용량 제한에서도 제외).
+- **사고량 조절**: 여행지 추천과 지역 가이드는 `effort: low`, 루트와 수정은 `medium`.
+- 모델 가격은 `lib/usage.mjs`의 `PRICES`에서 관리합니다.
+
 ## 사용량 제한
 
 API 크레딧 보호를 위해 환경변수로 제한합니다.
@@ -89,6 +97,7 @@ Claude Console의 **Limits** 메뉴에서 월 지출 한도도 함께 설정해 
 - `lib/planner.mjs` — Claude 호출, JSON 스키마, 입력 검증 (공용)
 - `lib/places.mjs` — 카카오/구글 장소 조회로 AI 추천 장소 검증
 - `lib/trips.mjs`, `lib/redis.mjs` — 루트 저장·불러오기 (Upstash Redis)
+- `lib/usage.mjs`, `lib/cache.mjs`, `lib/admin.mjs` — 비용 기록, 결과 캐시, 관리자 리포트
 - `lib/limit.mjs` — 사용량 제한 (Upstash Redis 있으면 Redis, 없으면 메모리)
 - `server.mjs` — 일반 Node 서버 (로컬 · Render)
 - `api/*.js`, `lib/vercel.mjs`, `vercel.json` — Vercel 서버리스 함수

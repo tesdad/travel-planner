@@ -8,6 +8,7 @@ import { runPlanner } from "./lib/planner.mjs";
 import { checkLimit, clientIp, limitBackend } from "./lib/limit.mjs";
 import { saveTrip, getTrip } from "./lib/trips.mjs";
 import { redisReady } from "./lib/redis.mjs";
+import { usageEndpoint } from "./lib/admin.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -55,6 +56,13 @@ const server = http.createServer(async (req, res) => {
     const tripId = req.url.match(/^\/api\/trips\/([^/?]+)$/)?.[1];
     if (req.method === "GET" && tripId) {
       const { status, body: out } = await getTrip(tripId);
+      return sendJson(res, status, out);
+    }
+
+    // 관리자: AI 사용량·비용 리포트
+    if (req.method === "GET" && req.url.split("?")[0] === "/api/usage") {
+      const days = new URLSearchParams(req.url.split("?")[1] || "").get("days");
+      const { status, body: out } = await usageEndpoint(req.headers.authorization, days);
       return sendJson(res, status, out);
     }
 

@@ -17,6 +17,8 @@ services:
         sync: false
       - key: KV_REST_API_TOKEN
         sync: false
+      - key: ADMIN_TOKEN
+        generateValue: true   # Render가 무작위 값을 만들어 줌 (대시보드에서 확인)
       - key: RATE_LIMIT_PER_HOUR
         value: "20"
       - key: DAILY_LIMIT

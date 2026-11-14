@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<meta name="color-scheme" content="light dark" />
+<title>tripmate · 사용량</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root { --bg: #fff; --surface: #f6f7f9; --ink: #0f1115; --muted: #7a808c; --line: #e7e9ee; --accent: #2f6bff; --warn: #b45309; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0d0f13; --surface: #151820; --ink: #f2f4f7; --muted: #8b919d; --line: #252a34; --accent: #5b8cff; --warn: #f5a524; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif; background: var(--bg); color: var(--ink); letter-spacing: -0.01em; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 24px; letter-spacing: -0.03em; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+  input, select, button { font: inherit; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 0 12px; }
+  input { flex: 1; min-width: 200px; }
+  button { background: var(--ink); color: var(--bg); border: 0; font-weight: 700; padding: 0 18px; cursor: pointer; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .kpi { background: var(--surface); border-radius: 14px; padding: 16px; }
+  .kpi b { display: block; font-size: 26px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 13px; color: var(--muted); }
+  h2 { font-size: 16px; margin: 28px 0 10px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 600; background: var(--surface); }
+  tr:last-child td { border-bottom: 0; }
+  .msg { color: var(--muted); font-size: 14px; }
+  .err { color: var(--warn); }
+</style>
+</head>
+<body>
+<main>
+  <h1>AI 사용량 · 비용</h1>
+  <div class="sub">요청마다 실제 토큰 수로 계산한 비용입니다. 날짜는 UTC 기준입니다.</div>
+  <form id="f">
+    <input id="token" type="password" placeholder="ADMIN_TOKEN" autocomplete="current-password" required />
+    <select id="days"><option value="1">오늘</option><option value="7" selected>최근 7일</option><option value="30">최근 30일</option><option value="90">최근 90일</option></select>
+    <button>조회</button>
+  </form>
+  <div id="out" class="msg">관리자 토큰을 입력하세요.</div>
+</main>
+<script>
+const NAMES = { recommend: "여행지 추천", route: "상세 루트", place: "지역 가이드", refine: "수정 요청" };
+const KRW = 1400; // 대략적인 환율 (표시용)
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const usd = (n) => "$" + n.toFixed(n < 1 ? 4 : 2);
+const won = (n) => "₩" + Math.round(n * KRW).toLocaleString();
+try { $("#token").value = sessionStorage.getItem("tm-admin") || ""; } catch {}
+
+function table(features) {
+  const rows = Object.entries(features).sort((a, b) => b[1].costUSD - a[1].costUSD);
+  if (!rows.length) return '<div class="msg">기록이 없습니다.</div>';
+  return `<div class="table-wrap"><table>
+    <tr><th>기능</th><th>AI 호출</th><th>캐시 응답</th><th>캐시 비율</th><th>평균 출력 토큰</th><th>평균 시간</th><th>1회 평균</th><th>합계</th></tr>
+    ${rows.map(([k, s]) => `<tr>
+      <td>${esc(NAMES[k] || k)}</td><td>${s.calls}</td><td>${s.cacheHits}</td><td>${s.cacheHitRate}</td>
+      <td>${s.avgOutputTokens.toLocaleString()}</td><td>${s.avgSeconds}s</td>
+      <td>${usd(s.avgCostUSD)} <span class="msg">(${won(s.avgCostUSD)})</span></td><td>${usd(s.costUSD)}</td></tr>`).join("")}
+  </table></div>`;
+}
+
+$("#f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const token = $("#token").value.trim();
+  try { sessionStorage.setItem("tm-admin", token); } catch {}
+  $("#out").innerHTML = '<div class="msg">불러오는 중…</div>';
+  try {
+    const res = await fetch(`/api/usage?days=${$("#days").value}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || "오류");
+    const t = d.total, f = Object.values(t.features);
+    const calls = f.reduce((a, s) => a + s.calls, 0), hits = f.reduce((a, s) => a + s.cacheHits, 0);
+    $("#out").innerHTML = `
+      <div class="kpis">
+        <div class="kpi"><b>${usd(t.totalUSD)}</b><span>총 비용 (${won(t.totalUSD)})</span></div>
+        <div class="kpi"><b>${calls.toLocaleString()}</b><span>AI 호출</span></div>
+        <div class="kpi"><b>${hits.toLocaleString()}</b><span>캐시로 응답 (비용 0)</span></div>
+        <div class="kpi"><b>${calls ? usd(t.totalUSD / calls) : "-"}</b><span>호출 1회 평균</span></div>
+      </div>
+      <div class="msg">${esc(d.period)} · 저장소: ${esc(d.storage)}</div>
+      <h2>기능별</h2>${table(t.features)}
+      ${Object.entries(d.daily).map(([day, s]) => `<h2>${day} · ${usd(s.totalUSD)}</h2>${table(s.features)}`).join("")}`;
+  } catch (err) {
+    $("#out").innerHTML = `<div class="err">${esc(err.message)}</div>`;
+  }
+});
+if ($("#token").value) $("#f").requestSubmit();
+</script>
+</body>
+</html>
