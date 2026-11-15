@@ -729,10 +729,9 @@ async function saveHwpx(btn, v) {
   let handle = null;
   if (typeof window.showSaveFilePicker === "function") {
     try {
-      handle = await window.showSaveFilePicker({
-        suggestedName: fileName,
-        types: [{ description: "한글 문서 (HWPX)", accept: { "application/octet-stream": [".hwpx"] } }],
-      });
+      // types(파일 형식 목록)는 지정하지 않습니다. macOS에서 한컴오피스가 없으면 .hwpx가 시스템에 등록되지 않은
+      // 형식이라, 형식을 지정하면 Finder 저장 창의 [저장] 버튼이 비활성화됩니다. 확장자는 suggestedName으로 붙습니다.
+      handle = await window.showSaveFilePicker({ suggestedName: fileName });
     } catch (err) {
       if (err.name === "AbortError") return; // 사용자가 취소
       handle = null; // 그 밖의 이유로 대화상자를 못 열면 일반 다운로드로
