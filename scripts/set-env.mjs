@@ -1,6 +1,6 @@
 // .env 에 비밀 값을 화면에 보이지 않게 입력해 저장합니다.
 //   npm run set-env -- CLOVASTUDIO_API_KEY UPSTAGE_API_KEY
-// - 입력한 글자는 화면에 표시되지 않습니다 (붙여넣기 가능)
+// - 입력한 글자는 • 로만 표시됩니다 (붙여넣기 가능)
 // - 엔터만 누르면 그 항목은 건너뜁니다 (기존 값 유지)
 // - 이미 있는 항목은 교체, 없으면 끝에 추가합니다
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -23,7 +23,9 @@ function askHidden(question) {
     stdin.resume();
     stdin.setEncoding("utf8");
     let value = "";
-    const onData = (chunk) => {
+    const onData = (input) => {
+      // 붙여넣기 시 터미널이 덧붙이는 표시(ESC[200~ … ESC[201~)와 기타 ESC 시퀀스 제거
+      const chunk = input.replace(/\u001b\[20[01]~/g, "").replace(/\u001b\[[0-9;]*[A-Za-z~]/g, "");
       for (const ch of chunk) {
         if (ch === "\r" || ch === "\n") {
           stdin.setRawMode(false);
@@ -33,8 +35,11 @@ function askHidden(question) {
           return resolve(value.trim());
         }
         if (ch === "\u0003") { process.stdout.write("\n취소했습니다.\n"); process.exit(130); } // Ctrl+C
-        if (ch === "\u007f" || ch === "\b") { value = value.slice(0, -1); continue; }
-        if (ch >= " ") value += ch;
+        if (ch === "\u007f" || ch === "\b") {
+          if (value) { value = value.slice(0, -1); process.stdout.write("\b \b"); }
+          continue;
+        }
+        if (ch >= " ") { value += ch; process.stdout.write("•"); } // 값 대신 점으로 입력 여부만 표시
       }
     };
     stdin.on("data", onData);

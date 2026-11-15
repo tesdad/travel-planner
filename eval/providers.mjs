@@ -98,7 +98,7 @@ async function callDeepSeek(model, feature, body) {
 // HyperCLOVA X — CLOVA Studio 네이티브 v3 API.
 // 스키마 강제(Structured Outputs)는 HCX-007에서만 지원하고, 이때 추론(thinking)은 꺼야 합니다.
 // 지원하지 않는 스키마 키워드: pattern (앱 스키마에는 없음)
-async function callClova(model, feature, body) {
+async function callClova(model, feature, body, attempt = 0) {
   const task = TASKS[feature];
   const res = await fetch(`https://clovastudio.stream.ntruss.com/v3/chat-completions/${encodeURIComponent(model.id)}`, {
     method: "POST",
@@ -112,6 +112,11 @@ async function callClova(model, feature, body) {
     signal: AbortSignal.timeout(240_000),
   });
   const data = await res.json().catch(() => null);
+  // 테스트 키는 동시 요청 한도가 낮음 → 429면 잠시 기다렸다 재시도 (최대 5회)
+  if (res.status === 429 && attempt < 5) {
+    await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+    return callClova(model, feature, body, attempt + 1);
+  }
   if (!res.ok || data?.status?.code !== "20000") {
     throw new Error(`CLOVA ${res.status}: ${JSON.stringify(data?.status || data).slice(0, 200)}`);
   }
