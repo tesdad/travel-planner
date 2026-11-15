@@ -5,230 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
 <title>여행 플래너 비용 관리</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: 한 열 참고 문서. 위에서 아래로 "무엇이 비싼가 → 어디서 조정하나 → 언제 점검하나" 순서 */
-:root {
-  --bg: #f6f8f8;
-  --surface: #ffffff;
-  --fg: #17252a;
-  --muted: #5a6b70;
-  --line: #d9e2e3;
-  --accent: #0f6e6a;
-  --accent-soft: #e2f1ef;
-  --hot: #b4481f;
-  --hot-soft: #fbeae2;
-  --code-bg: #eef3f3;
-  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1719; --surface: #162124; --fg: #e3ecec; --muted: #93a6a9; --line: #273739;
-    --accent: #5cc4bc; --accent-soft: #15322f; --hot: #f08c63; --hot-soft: #3a2219; --code-bg: #1d2b2e;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0f1719; --surface: #162124; --fg: #e3ecec; --muted: #93a6a9; --line: #273739;
-  --accent: #5cc4bc; --accent-soft: #15322f; --hot: #f08c63; --hot-soft: #3a2219; --code-bg: #1d2b2e;
-  color-scheme: dark;
-}
-body {
-  background: var(--bg); color: var(--fg); font-family: var(--font-body);
-  font-size: 15px; line-height: 1.65;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 32px 64px;
-}
-.wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 40px; }
-header { display: grid; gap: 8px; }
-.eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--accent); font-weight: 700; }
-h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.25; margin: 0; text-wrap: balance; }
-h2 { font-size: 20px; margin: 0 0 4px; text-wrap: balance; }
-h3 { font-size: 16px; margin: 0; }
-p { margin: 0; max-width: 68ch; }
-.lead { color: var(--muted); }
-section { display: grid; gap: 14px; }
-.sub { color: var(--muted); font-size: 14px; }
-code, .var { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
-.path { font-weight: 500; }
-.path b { color: var(--accent); font-weight: 600; }
-
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 14px; }
-th, td { text-align: left; padding: 11px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
-th { font-size: 12px; letter-spacing: .04em; color: var(--muted); font-weight: 600; background: var(--bg); }
-tr:last-child td { border-bottom: 0; }
-td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
-.tag.high { background: var(--hot-soft); color: var(--hot); }
-.tag.mid { background: var(--accent-soft); color: var(--accent); }
-.tag.low { background: var(--code-bg); color: var(--muted); }
-
-.callout { border: 1px solid var(--hot); background: var(--hot-soft); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; }
-.callout strong { color: var(--hot); }
-
-/* 하루 최대 비용 계산 */
-.calc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 16px; }
-.calc-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; }
-.field { display: grid; gap: 6px; min-width: 0; }
-.field label { font-size: 13px; color: var(--muted); }
-.field input, .field select {
-  font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
-  border-radius: 8px; padding: 8px 10px; min-width: 0;
-}
-.field input { width: 120px; font-variant-numeric: tabular-nums; }
-.field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.result { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
-.result div { display: grid; gap: 2px; }
-.result .k { font-size: 12px; color: var(--muted); }
-.result .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.note { font-size: 13px; color: var(--muted); }
-
-ol.steps { margin: 0; padding-left: 22px; display: grid; gap: 10px; max-width: 72ch; }
-ol.steps li::marker { color: var(--accent); font-weight: 700; }
-footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+  :root { --bg: #f6f8f8; --fg: #17252a; --muted: #5a6b70; --line: #d9e2e3; --accent: #0f6e6a; --err: #b4481f; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f1719; --fg: #e3ecec; --muted: #93a6a9; --line: #273739; --accent: #5cc4bc; --err: #f08c63; color-scheme: dark; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.6 system-ui, "Apple SD Gothic Neo", sans-serif; padding: 48px max(16px, env(safe-area-inset-left)); }
+  main { max-width: 420px; margin: 0 auto; display: grid; gap: 12px; }
+  h1 { font-size: 22px; margin: 0; }
+  p { margin: 0; color: var(--muted); font-size: 14px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input { flex: 1 1 200px; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--fg); }
+  button { font: inherit; padding: 8px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+  #msg { color: var(--err); min-height: 1.6em; }
+  a { color: var(--accent); }
 </style>
 </head>
 <body>
-<div class="wrap" style="margin-bottom:24px"><a href="/admin.html" style="color:var(--accent);font-size:14px">← 사용량 페이지로</a></div>
-
-<div class="wrap">
-  <header>
-    <div class="eyebrow">tavel-ai.com · travelroute-ai.com 운영 참고</div>
-    <h1>사용자가 늘면 어디서 비용이 늘고, 어디서 조정하나</h1>
-    <p class="lead">Cloudflare Pages에서 돌아가는 여행 플래너 기준입니다. 비용 대부분은 AI 호출에서 나오고, 그다음이 해외 장소 확인(구글)입니다. 나머지는 무료 한도 안에서 시작합니다.</p>
-  </header>
-
-  <section>
-    <h2>1. 비용이 나는 곳</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>비중</th><th>요소</th><th>비용이 나는 때</th><th>규모</th></tr></thead>
-        <tbody>
-          <tr><td><span class="tag high">가장 큼</span></td><td><b>AI 호출</b><br>Gemini / Claude</td><td>추천, 루트, 지역 가이드, 일정 수정을 누를 때마다 1회</td><td>여행 1건(추천+루트+가이드) 약 ₩39 (Gemini Flash), 약 ₩159 (Sonnet)</td></tr>
-          <tr><td><span class="tag high">큼</span></td><td><b>구글 장소 확인</b><br>Places API (New)</td><td>해외 지역 가이드를 만들 때 장소마다 1회. 가이드 1번에 약 11~15회</td><td>평점까지 받아 오는 상위 요금 등급이라, 해외 이용이 많으면 빠르게 늘어남</td></tr>
-          <tr><td><span class="tag mid">보통</span></td><td>카카오 장소 확인</td><td>국내 지역 가이드의 장소마다 1회</td><td>일일 무료 쿼터 안이면 0원</td></tr>
-          <tr><td><span class="tag low">작음</span></td><td>Upstash Redis</td><td>AI 호출, 공유 링크, 사용량 제한 기록마다 명령 여러 개</td><td>무료 등급의 월 명령 수를 넘으면 유료</td></tr>
-          <tr><td><span class="tag low">작음</span></td><td>Cloudflare Pages</td><td>API 요청마다 1회</td><td>무료 등급 하루 10만 요청</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="note">AI 비용은 모델 비교 테스트에서 잰 값입니다. 실제 비용은 일정 길이와 요청 내용에 따라 달라집니다.</p>
-  </section>
-
-  <section>
-    <h2>2. 앱에서 조정하는 변수</h2>
-    <p class="path">Cloudflare 대시보드 → <b>Workers &amp; Pages</b> → <b>travel-planner</b> → <b>Settings</b> → <b>Variables and secrets</b></p>
-    <p class="sub">변수를 바꾼 뒤에는 다시 배포해야 적용됩니다. GitHub에 커밋을 푸시하거나, Deployments에서 최신 배포를 Retry 하면 됩니다.</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>변수</th><th>현재 값</th><th>효과</th></tr></thead>
-        <tbody>
-          <tr><td><span class="var">DAILY_LIMIT</span></td><td class="num">300 (기본값)</td><td><b>사이트 전체의 하루 AI 호출 상한.</b> 비용 폭주를 막는 가장 중요한 안전장치입니다. 아래 계산기로 하루 최대 비용을 볼 수 있습니다.</td></tr>
-          <tr><td><span class="var">RATE_LIMIT_PER_HOUR</span></td><td class="num">30</td><td>IP 하나당 시간당 AI 호출 수. 한 사람이 많이 쓰는 것을 막습니다. 매시 정각에 초기화됩니다.</td></tr>
-          <tr><td><span class="var">AI_PROVIDER</span></td><td><code>gemini</code></td><td><code>gemini</code>이 가장 저렴합니다. 지우면 Claude를 쓰고 비용이 약 4배가 됩니다.</td></tr>
-          <tr><td><span class="var">AI_FALLBACK</span></td><td>(없음)</td><td><code>claude</code>로 켜면 Gemini가 실패한 요청만 Claude가 다시 처리합니다. 그만큼 비용이 더 듭니다.</td></tr>
-          <tr><td><span class="var">GEMINI_MODEL</span></td><td><code>gemini-3.8-flash</code> (기본값)</td><td><code>gemini-3.5-flash-lite</code>로 바꾸면 더 저렴하지만, 비교 테스트에서 장소 이름 오류가 더 많았습니다.</td></tr>
-          <tr><td><span class="var">AI_MODEL</span></td><td><code>claude-sonnet-5-5</code> (기본값)</td><td>Claude를 쓸 때만 해당합니다. Opus로 바꾸면 훨씬 비쌉니다.</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <h3>코드에 고정된 절약 장치</h3>
-    <p class="sub">바꾸려면 코드를 수정해야 합니다.</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>항목</th><th>값</th><th>파일</th><th>효과</th></tr></thead>
-        <tbody>
-          <tr><td>추천 결과 캐시</td><td class="num">7일</td><td><code>lib/planner.mjs</code></td><td>같은 조건의 추천은 AI를 다시 부르지 않고, 사용량 제한에도 세지 않습니다.</td></tr>
-          <tr><td>지역 가이드 캐시</td><td class="num">14일</td><td><code>lib/planner.mjs</code></td><td>같은 지역은 AI와 장소 확인(카카오·구글)을 다시 호출하지 않습니다. 늘리면 비용이 줄어듭니다.</td></tr>
-          <tr><td>공유 링크 보관</td><td class="num">90일</td><td><code>lib/trips.mjs</code></td><td>Redis 저장 용량에 영향을 줍니다.</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section>
-    <h2>하루 최대 AI 비용 계산</h2>
-    <p class="sub"><span class="var">DAILY_LIMIT</span>만큼 하루 내내 호출된다고 가정한 상한입니다. 장소 확인 비용은 빠져 있습니다.</p>
-    <div class="calc">
-      <div class="calc-row">
-        <div class="field">
-          <label for="limit">DAILY_LIMIT (회/일)</label>
-          <input id="limit" type="number" min="1" step="10" value="300" inputmode="numeric">
-        </div>
-        <div class="field">
-          <label for="model">모델</label>
-          <select id="model">
-            <option value="13">Gemini Flash · 2026년 요금 (호출당 약 ₩13)</option>
-            <option value="26">Gemini Flash · 2027년 1월부터 (호출당 약 ₩26)</option>
-            <option value="7">Gemini Flash-Lite (호출당 약 ₩7)</option>
-            <option value="53">Claude Sonnet (호출당 약 ₩53)</option>
-          </select>
-        </div>
-      </div>
-      <div class="result" aria-live="polite">
-        <div><span class="k">하루 최대</span><span class="v" id="day">₩3,900</span></div>
-        <div><span class="k">30일 최대</span><span class="v" id="month">₩117,000</span></div>
-      </div>
-      <p class="note">호출당 비용은 여행 1건(호출 3회) 비용을 3으로 나눈 대략값입니다. 실제 사용량은 관리자 페이지(<code>/admin.html</code>)에서 확인하세요.</p>
-    </div>
-  </section>
-
-  <section>
-    <h2>3. 외부 서비스별 확인·상한 설정 위치</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>서비스</th><th>사이트 → 메뉴</th><th>해 둘 일</th></tr></thead>
-        <tbody>
-          <tr><td><b>Gemini</b></td><td>aistudio.google.com → <b>Billing / Usage</b><br>또는 console.cloud.google.com → <b>Billing → Budgets &amp; alerts</b></td><td><b>월 예산 알림과 지출 상한 설정.</b> 사용량 확인</td></tr>
-          <tr><td><b>Google Places</b></td><td>console.cloud.google.com → <b>APIs &amp; Services → Places API (New) → Quotas</b></td><td><b>하루 요청 수 상한</b>을 걸어 두면 해외 가이드 비용이 일정 이상 늘지 않습니다. 상한을 넘으면 장소 확인만 빠지고 가이드는 그대로 나옵니다.</td></tr>
-          <tr><td>Anthropic (Claude)</td><td>platform.claude.com → <b>Settings → Limits / Billing</b></td><td>월 지출 상한 설정. 지금은 Gemini를 쓰므로 낮게 두어도 됩니다.</td></tr>
-          <tr><td>카카오</td><td>developers.kakao.com → 내 애플리케이션 → <b>쿼터</b></td><td>로컬(장소 검색) API의 일일 무료 쿼터 사용량 확인</td></tr>
-          <tr><td>Upstash Redis</td><td>console.upstash.com → 데이터베이스 → <b>Usage</b></td><td>무료 등급 한도에 가까워지면 Pay-as-you-go로 전환</td></tr>
-          <tr><td>Cloudflare</td><td>Workers &amp; Pages → travel-planner → <b>Metrics</b></td><td>하루 요청 수가 무료 등급 10만 회에 가까운지 확인</td></tr>
-          <tr><td>앱 관리자 페이지</td><td><code>/admin.html</code> (ADMIN_TOKEN으로 로그인)</td><td>기능별 호출 수, 비용 추정, 캐시 적중률, Gemini 실패율</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section>
-    <h2>4. 사용자가 늘 때 점검 순서</h2>
-    <div class="callout">
-      <p><strong>지금 바로 할 일:</strong> Gemini와 Google Cloud에 예산 알림을 걸어 두세요. 앱의 제한은 앱을 거친 호출만 막고, 키가 유출되면 막지 못합니다.</p>
-    </div>
-    <ol class="steps">
-      <li><b>매주 <code>/admin.html</code> 확인.</b> 하루 호출 수가 <span class="var">DAILY_LIMIT</span>에 자주 닿으면, 감당할 수 있는 비용만큼 올립니다.</li>
-      <li><b>해외 이용이 늘면 Places API 하루 상한 설정.</b> 구글 장소 확인 비용이 AI 다음으로 큽니다.</li>
-      <li><b>2027년 1월 1일 Gemini Flash 요금 2배 인상</b> ($0.75/$3.75 → $1.50/$7.50, 100만 토큰당). 그 전에 <span class="var">DAILY_LIMIT</span>과 예산을 다시 봅니다.</li>
-      <li><b>한도에 걸린다는 문의가 늘면 <span class="var">RATE_LIMIT_PER_HOUR</span>를 올립니다.</b> 회사·학교 와이파이나 모바일 통신사처럼 여러 사람이 같은 IP를 쓰면 한도를 함께 나눠 씁니다.</li>
-      <li><b>Upstash와 Cloudflare는 무료 등급의 70~80%가 되면</b> 유료 전환을 검토합니다.</li>
-    </ol>
-  </section>
-
-  <footer>무료 한도와 요금 단가는 각 서비스가 바꿀 수 있습니다. 결정하기 전에 각 콘솔의 현재 값으로 확인하세요. 2026년 11월 기준.</footer>
-</div>
-
+<main>
+  <a href="/admin.html">← 사용량 페이지로</a>
+  <h1>비용 관리 가이드</h1>
+  <p>관리자 전용 문서입니다. 사용량 페이지와 같은 ADMIN_TOKEN을 입력하세요.</p>
+  <form id="f">
+    <input id="token" type="password" placeholder="ADMIN_TOKEN" autocomplete="current-password" required />
+    <button>열기</button>
+  </form>
+  <div id="msg" role="status"></div>
+</main>
 <script>
-(() => {
-  const limit = document.getElementById("limit");
-  const model = document.getElementById("model");
-  const won = (n) => "₩" + Math.round(n).toLocaleString("ko-KR");
-  function update() {
-    const n = Math.max(0, Number(limit.value) || 0);
-    const per = Number(model.value);
-    document.getElementById("day").textContent = won(n * per);
-    document.getElementById("month").textContent = won(n * per * 30);
+// 문서 내용은 이 파일(공개 저장소)에 없고, 토큰을 확인한 서버가 Redis에서 꺼내 줍니다.
+const $ = (s) => document.querySelector(s);
+try { $("#token").value = sessionStorage.getItem("tm-admin") || ""; } catch {}
+$("#f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const token = $("#token").value.trim();
+  try { sessionStorage.setItem("tm-admin", token); } catch {}
+  $("#msg").textContent = "불러오는 중…";
+  try {
+    const res = await fetch("/api/admin/docs/cost-guide", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `오류 ${res.status}`);
+    document.open();
+    document.write(data.html);
+    document.close();
+  } catch (err) {
+    $("#msg").textContent = err.message;
   }
-  limit.addEventListener("input", update);
-  model.addEventListener("change", update);
-  update();
-})();
+});
+if ($("#token").value) $("#f").requestSubmit();
 </script>
-
 </body>
 </html>

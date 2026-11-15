@@ -17,3 +17,7 @@ eval/results/
 # Cloudflare 로컬 테스트 (wrangler)
 .dev.vars
 .wrangler/
+
+# 관리자 문서 원본 (Redis에만 올림, 공개 저장소에 커밋하지 않음)
+private/
+docs/cost-guide.html

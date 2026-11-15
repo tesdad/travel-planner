@@ -8,7 +8,7 @@ import { runPlanner, AI_PROVIDER, AI_FALLBACK } from "./lib/planner.mjs";
 import { checkLimit, clientIp, limitBackend } from "./lib/limit.mjs";
 import { saveTrip, getTrip, deleteTrip } from "./lib/trips.mjs";
 import { redisReady } from "./lib/redis.mjs";
-import { usageEndpoint } from "./lib/admin.mjs";
+import { usageEndpoint, docEndpoint } from "./lib/admin.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -60,6 +60,14 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "DELETE" && tripId) {
       const { status, body: out } = await deleteTrip(tripId, req.headers["x-delete-key"]);
+      return sendJson(res, status, out);
+    }
+
+    // 관리자 문서 (Redis 보관, 토큰 필요)
+    const docName = req.url.match(/^\/api\/admin\/docs\/([^/?]+)$/)?.[1];
+    if (docName && (req.method === "GET" || req.method === "PUT")) {
+      const payload = req.method === "PUT" ? await readBody(req) : null;
+      const { status, body: out } = await docEndpoint(req.method, req.headers.authorization, docName, payload);
       return sendJson(res, status, out);
     }
 
