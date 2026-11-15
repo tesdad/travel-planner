@@ -99,6 +99,8 @@
   .panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
   .panel-foot .hint { font-size: 13px; color: var(--muted); }
   .field-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .field-note.warn { color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 6px 10px; }
+  .field-note[hidden] { display: none; }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: transform .15s, opacity .15s; }
   .btn:hover { transform: translateY(-1px); }
   .btn:disabled { opacity: .5; cursor: wait; transform: none; }
@@ -403,6 +405,7 @@
             <div class="field">
               <label for="t-duration">여행 기간</label>
               <div class="control"><svg class="ico"><use href="#i-cal"/></svg><input id="t-duration" name="duration" placeholder="예: 2박 3일" required /></div>
+              <div class="field-note warn" id="t-duration-warn" role="status" hidden></div>
             </div>
             <div class="field">
               <label for="t-transport">이동 수단</label>
@@ -418,6 +421,7 @@
             <label for="t-extra">추가 요청 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
             <div class="control"><input id="t-extra" name="extra" maxlength="500" placeholder="예: 아이 동반, 아침 늦게 시작, 카페 많이" /></div>
             <div class="field-note">이름·연락처 같은 개인정보는 적지 마세요. 입력 내용은 일정 생성을 위해 AI로 전송돼요.</div>
+            <div class="field-note">여행 일정이 19박 20일을 초과하면 실패할 수 있어요. 이 경우 일정을 나누어서 검색해 주세요.</div>
           </div>
           <div class="panel-foot">
             <span class="hint">시간대별 일정과 이동 방법까지 짜 드려요</span>
@@ -576,6 +580,25 @@ $("#out-recommend").addEventListener("click", (e) => {
 let routeContext = { route: "", transport: "" };
 // 수정 이력: versions[i] = { route, request, changes }
 let routeState = null;
+
+// 긴 일정 안내: 20일을 넘으면 AI 응답 시간이 길어져 실패할 수 있음 (Gemini 측정: 20일 ≈ 73초, 제한 100초)
+const MAX_TRIP_DAYS = 20;
+function tripDays(duration) {
+  const s = String(duration || "").replace(/\s+/g, "");
+  let m = s.match(/(\d+)박(\d+)일/);
+  if (m) return Number(m[2]);
+  if ((m = s.match(/(\d+)박/))) return Number(m[1]) + 1;
+  if ((m = s.match(/(\d+)일/))) return Number(m[1]);
+  if ((m = s.match(/(\d+)주/))) return Number(m[1]) * 7;
+  return null;
+}
+function updateDurationWarn() {
+  const days = tripDays($("#t-duration").value);
+  const warn = $("#t-duration-warn");
+  warn.hidden = !(days > MAX_TRIP_DAYS);
+  if (!warn.hidden) warn.textContent = `${days}일 일정은 실패할 수 있어요. 19박 20일 이하로 나누어서 검색해 주세요.`;
+}
+$("#t-duration").addEventListener("input", updateDurationWarn);
 
 $("#form-route").addEventListener("submit", async (e) => {
   e.preventDefault();
