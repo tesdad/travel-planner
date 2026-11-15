@@ -3,6 +3,7 @@
 //   npm run compare                       → 실행 계획과 예상 비용만 출력 (API 호출 없음)
 //   npm run compare -- --yes              → 실제 실행
 //   npm run compare -- --yes --models haiku,deepseek --features place
+//   npm run compare -- --yes --models clova,solar --into eval/results/2026-11-14T10-51-18   → 국내 모델만 돌려 기존 결과에 합치기
 //   npm run compare -- --report eval/results/2026-11-14T10-00-00   → 저장된 결과로 리포트만 다시 생성
 //   npm run compare -- --yes --models deepseek --into eval/results/2026-11-14T10-00-00   → 특정 모델만 다시 돌려 기존 리포트에 합치기
 //
@@ -10,7 +11,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { MODELS, runOnce } from "./providers.mjs";
+import { MODELS, PROVIDER_KEYS, runOnce } from "./providers.mjs";
 import { validate } from "./validate.mjs";
 import { TASKS } from "../lib/planner.mjs";
 import { enrichPlace, placesStatus } from "../lib/places.mjs";
@@ -33,13 +34,18 @@ if (args.report) {
 // ---------- 실행 계획 ----------
 const inputs = JSON.parse(await readFile(join(here, "inputs.json"), "utf8"));
 const features = String(args.features || "recommend,route,place").split(",").filter((f) => TASKS[f] && inputs[f]);
-let models = String(args.models || "opus,sonnet,haiku,deepseek").split(",").filter((m) => MODELS[m]);
+let models = String(args.models || Object.keys(MODELS).join(",")).split(",").filter((m) => MODELS[m]);
 const limit = Number(args.limit) || Infinity;
 const concurrency = Math.max(1, Number(args.concurrency) || 4);
 
 const missing = [];
-if (!process.env.ANTHROPIC_API_KEY) { models = models.filter((m) => MODELS[m].provider !== "claude"); missing.push("ANTHROPIC_API_KEY (Claude 모델 제외됨)"); }
-if (!process.env.DEEPSEEK_API_KEY) { models = models.filter((m) => MODELS[m].provider !== "deepseek"); missing.push("DEEPSEEK_API_KEY (DeepSeek 제외됨)"); }
+for (const [provider, env] of Object.entries(PROVIDER_KEYS)) {
+  const affected = models.filter((m) => MODELS[m].provider === provider);
+  if (affected.length && !process.env[env]) {
+    models = models.filter((m) => !affected.includes(m));
+    missing.push(`${env} (${affected.map((m) => MODELS[m].label).join(", ")} 제외됨)`);
+  }
+}
 
 const jobs = [];
 for (const f of features) for (const input of inputs[f].slice(0, limit)) for (const m of models) jobs.push({ feature: f, input, model: m });
