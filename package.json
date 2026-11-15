@@ -5,7 +5,8 @@
   "main": "server.mjs",
   "scripts": {
     "start": "node --env-file-if-exists=.env server.mjs",
-    "compare": "node --env-file-if-exists=.env eval/compare.mjs"
+    "compare": "node --env-file-if-exists=.env eval/compare.mjs",
+    "set-env": "node scripts/set-env.mjs"
   },
   "keywords": [],
   "author": "",
