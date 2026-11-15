@@ -805,10 +805,12 @@ async function loadSharedTrip(id) {
     out.innerHTML = errorBox(err.message);
   }
 }
-// 개인정보 안내: 서버가 DeepSeek 우선 모드면 문구를 실제 전송처에 맞게 바꿈
+// 개인정보 안내: 서버가 다른 AI를 먼저 쓰는 모드면 문구를 실제 전송처에 맞게 바꿈
+const AI_VENDORS = { deepseek: "DeepSeek(중국)", gemini: "Google(미국)" };
 fetch("/healthz").then((r) => r.json()).then((h) => {
-  if (h.ai === "deepseek") {
-    $("#privacy-ai").textContent = "여행 일정 생성을 위해 DeepSeek(중국)의 AI로 전송되며, 처리에 실패하면 Anthropic(미국)의 AI로 다시 전송됩니다. 개인정보는 입력하지 마세요.";
+  const vendor = AI_VENDORS[h.ai];
+  if (vendor) {
+    $("#privacy-ai").textContent = `여행 일정 생성을 위해 ${vendor}의 AI로 전송되며, 처리에 실패하면 Anthropic(미국)의 AI로 다시 전송됩니다. 개인정보는 입력하지 마세요.`;
   }
 }).catch(() => {});
 

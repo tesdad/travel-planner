@@ -86,6 +86,7 @@ Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용�
 - **관리자 페이지**: `/admin.html`에서 `ADMIN_TOKEN`을 입력하면 기능별 호출 수, 캐시 비율, 평균 비용을 볼 수 있습니다.
 - **결과 캐시**: 지역 가이드(14일)와 여행지 추천(7일)은 같은 질문이면 저장된 답을 돌려줍니다(비용 0, 사용량 제한에서도 제외).
 - **모델**: 기본 `claude-sonnet-5-5` (비교 실험 결과 Opus 대비 비용 58% 절감). 환경변수 `AI_MODEL`로 변경 가능
+- **(실험) Gemini 우선 모드**: `AI_PROVIDER=gemini` + `GEMINI_API_KEY`(유료 등급)를 설정하면 Gemini 3.8 Flash(`GEMINI_MODEL`로 변경 가능)로 먼저 요청합니다. 스키마를 강제하므로 형식 오류가 드물고, 오류·검사 실패 시 Claude로 다시 요청합니다. 비교 실험에서 국내 장소 실재율 89%(Sonnet 87%), 여행 1건 약 ₩39(Sonnet ₩159, 2027년부터 Gemini 가격 2배).
 - **(실험) DeepSeek 우선 모드**: `AI_PROVIDER=deepseek` + `DEEPSEEK_API_KEY`를 설정하면 DeepSeek로 먼저 요청합니다. 결과를 검사(`lib/checks.mjs`: 스키마, 요청 일수, 날짜 순서·반복, 추천 수, 장소 중복)해서 실패하거나 오류가 나면 Claude로 다시 요청합니다. 관리자 페이지에 기능별 대체 비율이 표시되고, `/healthz`의 `ai` 값에 따라 개인정보 안내 문구가 바뀝니다. 끄려면 `AI_PROVIDER`를 지우면 됩니다.
 - **사고량 조절**: 여행지 추천과 지역 가이드는 `effort: low`, 루트와 수정은 `medium`.
 - 모델 가격은 `lib/usage.mjs`의 `PRICES`에서 관리합니다.
