@@ -20,12 +20,21 @@ const KRW_PER_USD = Number(process.env.KRW_PER_USD) || 1400;
 const HCX_PRICE_IN = ((Number(process.env.HCX_PRICE_IN_KRW_PER_1K) || 1.25) * 1000) / KRW_PER_USD;
 const HCX_PRICE_OUT = ((Number(process.env.HCX_PRICE_OUT_KRW_PER_1K) || 5) * 1000) / KRW_PER_USD;
 
+// Gemini 가격(100만 토큰당 달러, 유료 등급 · 출력에 thinking 포함) — 공식 요금표 2026-11 기준
+// gemini-3.8-flash: $0.75 / $3.75 (2026-12-31까지, 2027-01-01부터 $1.50 / $7.50)
+// gemini-3.5-flash-lite: $0.30 / $2.50
+const GEMINI_PRICES = {
+  flash: [Number(process.env.GEMINI_FLASH_PRICE_IN) || 0.75, Number(process.env.GEMINI_FLASH_PRICE_OUT) || 3.75, 0.075],
+  lite: [Number(process.env.GEMINI_LITE_PRICE_IN) || 0.3, Number(process.env.GEMINI_LITE_PRICE_OUT) || 2.5, 0.03],
+};
+
 // 모델별로 필요한 API 키 (없으면 실험에서 자동 제외)
 export const PROVIDER_KEYS = {
   claude: "ANTHROPIC_API_KEY",
   deepseek: "DEEPSEEK_API_KEY",
   clova: "CLOVASTUDIO_API_KEY",
   upstage: "UPSTAGE_API_KEY",
+  gemini: "GEMINI_API_KEY",
 };
 
 export const MODELS = {
@@ -35,6 +44,8 @@ export const MODELS = {
   deepseek: { label: "DeepSeek (deepseek-chat)", provider: "deepseek", id: "deepseek-chat", price: [DS_PRICE_IN, DS_PRICE_OUT] },
   clova: { label: "HyperCLOVA X (HCX-007)", provider: "clova", id: process.env.CLOVA_MODEL || "HCX-007", price: [HCX_PRICE_IN, HCX_PRICE_OUT] },
   solar: { label: "Upstage Solar Pro 4", provider: "upstage", id: process.env.SOLAR_MODEL || "solar-pro4", price: [SOLAR_PRICE_IN, SOLAR_PRICE_OUT] },
+  "gemini-flash": { label: "Gemini 3.8 Flash", provider: "gemini", id: process.env.GEMINI_FLASH_MODEL || "gemini-3.8-flash", price: GEMINI_PRICES.flash },
+  "gemini-lite": { label: "Gemini 3.5 Flash-Lite", provider: "gemini", id: process.env.GEMINI_LITE_MODEL || "gemini-3.5-flash-lite", price: GEMINI_PRICES.lite },
 };
 
 let anthropic;
@@ -161,7 +172,44 @@ async function callSolar(model, feature, body) {
   };
 }
 
-const CALLERS = { claude: callClaude, deepseek: callDeepSeek, clova: callClova, upstage: callSolar };
+// Google Gemini — generateContent, responseJsonSchema로 스키마 강제.
+// 사고량은 앱의 effort(low/medium)를 그대로 thinkingLevel로 전달해 Claude와 조건을 맞춤.
+// 유료 등급 키를 쓰세요 (무료 등급은 입력이 Google 제품 개선에 쓰일 수 있음).
+async function callGemini(model, feature, body) {
+  const task = TASKS[feature];
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.id)}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_BASE }] },
+      contents: [{ role: "user", parts: [{ text: task.prompt(body) }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseJsonSchema: task.schema,
+        maxOutputTokens: 16000,
+        thinkingConfig: { thinkingLevel: task.effort },
+      },
+    }),
+    signal: AbortSignal.timeout(240_000),
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const data = await res.json();
+  const cand = data.candidates?.[0];
+  const u = data.usageMetadata || {};
+  const [pin, pout, pcached] = model.price;
+  const cached = u.cachedContentTokenCount || 0;
+  const out = (u.candidatesTokenCount || 0) + (u.thoughtsTokenCount || 0); // thinking 토큰도 출력 요금
+  return {
+    raw: (cand?.content?.parts || []).filter((p) => !p.thought && p.text).map((p) => p.text).join(""),
+    stop: cand?.finishReason === "STOP" ? "stop" : cand?.finishReason || data.promptFeedback?.blockReason,
+    servedBy: data.modelVersion || model.id,
+    inTokens: u.promptTokenCount || 0,
+    outTokens: out,
+    cost: (((u.promptTokenCount || 0) - cached) * pin + cached * pcached + out * pout) / 1e6,
+  };
+}
+
+const CALLERS = { claude: callClaude, deepseek: callDeepSeek, clova: callClova, upstage: callSolar, gemini: callGemini };
 
 /** 한 번 호출. 실패해도 throw 하지 않고 error 필드로 반환 */
 export async function runOnce(modelKey, feature, body) {

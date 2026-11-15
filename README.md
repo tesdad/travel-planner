@@ -92,7 +92,7 @@ Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용�
 
 ## 모델 비교 실험
 
-같은 입력(`eval/inputs.json`)을 Claude Opus·Sonnet·Haiku, DeepSeek, HyperCLOVA X(HCX-007), Upstage Solar Pro 4에 보내 품질·속도·비용을 비교합니다. 앱과 **똑같은 프롬프트·스키마**(`lib/planner.mjs`의 `TASKS`)를 사용합니다.
+같은 입력(`eval/inputs.json`)을 Claude Opus·Sonnet·Haiku, DeepSeek, HyperCLOVA X(HCX-007), Upstage Solar Pro 4, Gemini 3.8 Flash · 3.5 Flash-Lite에 보내 품질·속도·비용을 비교합니다. 앱과 **똑같은 프롬프트·스키마**(`lib/planner.mjs`의 `TASKS`)를 사용합니다.
 
 ```bash
 npm run compare            # 실행 계획과 예상 비용만 출력 (API 호출 없음)
@@ -102,6 +102,7 @@ npm run compare -- --yes --models haiku,deepseek --features place --limit 3
 
 - 측정: 형식 통과율(스키마 검사), 평균 시간, 토큰, 기능별 비용, **여행 1건 비용**, **장소 실재율**(카카오·구글로 확인)
 - 리포트: 입력별 결과를 나란히 비교, **블라인드 모드**(모델 이름 숨김)로 별점 평가
+- Gemini는 `GEMINI_API_KEY` 필요(유료 등급 키). 모델 이름은 `--models gemini-flash,gemini-lite`
 - HyperCLOVA X는 `CLOVASTUDIO_API_KEY`, Solar는 `UPSTAGE_API_KEY` 필요(키가 없는 모델은 자동 제외). HCX-007 가격은 원화 기준이라 `HCX_PRICE_IN_KRW_PER_1K` / `HCX_PRICE_OUT_KRW_PER_1K`로 맞춰 주세요.
 - DeepSeek는 `.env`의 `DEEPSEEK_API_KEY` 필요. 가격은 `DEEPSEEK_PRICE_IN` / `DEEPSEEK_PRICE_OUT`로 조정
 
