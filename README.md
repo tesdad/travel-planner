@@ -62,6 +62,18 @@ Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용�
 
 > Vercel 무료(Hobby) 플랜은 비상업적 용도만 허용됩니다.
 
+## 배포 (Cloudflare Pages)
+
+`functions/`의 Pages Functions가 `lib/` 코드를 그대로 실행합니다(`functions/_lib.js`가 Cloudflare 환경 변수를 `process.env`로 옮긴 뒤 불러옴). 공유 링크 `/t/아이디`는 `public/_redirects`로 처리합니다.
+
+1. Cloudflare 대시보드 → **Workers & Pages → Create → Pages → Connect to Git** → 이 저장소 선택
+2. 빌드 설정: Framework preset **None**, Build command `npm ci`, Build output directory `public`
+3. **Settings → Runtime → Compatibility flags**에 `nodejs_compat` 추가 (Production·Preview 모두). 없으면 `No such module "node:crypto"` 오류
+4. **Settings → Variables and Secrets**에 `.env.example`의 키들을 추가(키는 Secret으로) → 다시 배포
+5. **Custom domains**에서 도메인 연결
+
+`wrangler.toml`은 두지 않습니다(있으면 대시보드 변수가 적용되지 않음). 로컬 확인: `.env`를 `.dev.vars`로 복사한 뒤 `npx wrangler pages dev public --compatibility-date=2025-09-01 --compatibility-flags=nodejs_compat`
+
 ## 저장소 (공유 링크 · 사용량 제한)
 
 공유 링크 저장과 서버리스 환경의 사용량 제한에 **Upstash Redis**(무료 플랜 가능)를 사용합니다. Render와 Vercel에 **같은 값**을 넣으면 어느 주소에서 저장해도 양쪽에서 링크가 열립니다.

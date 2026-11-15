@@ -1,0 +1,2 @@
+# Cloudflare Pages: 공유 링크(/t/아이디)는 index.html 로 (Render·Vercel은 각자 설정으로 처리)
+/t/*  /index.html  200
