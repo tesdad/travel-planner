@@ -71,6 +71,7 @@ Vercel은 요청마다 서버가 따로 실행되므로, Redis 없이는 사용�
 3. **Settings → Runtime → Compatibility flags**에 `nodejs_compat` 추가 (Production·Preview 모두). 없으면 `No such module "node:crypto"` 오류
 4. **Settings → Variables and Secrets**에 `.env.example`의 키들을 추가(키는 Secret으로) → 다시 배포
 5. **Custom domains**에서 도메인 연결
+6. Gemini 사용 시 **Settings → Runtime → Placement**를 Region → GCP `asia-northeast3`(서울)로 지정. 한국 접속은 홍콩(HKG)에서 실행되는 경우가 많은데, Google이 홍콩발 Gemini 호출을 막음(`User location is not supported`)
 
 `wrangler.toml`은 두지 않습니다(있으면 대시보드 변수가 적용되지 않음). 로컬 확인: `.env`를 `.dev.vars`로 복사한 뒤 `npx wrangler pages dev public --compatibility-date=2025-09-01 --compatibility-flags=nodejs_compat`
 
