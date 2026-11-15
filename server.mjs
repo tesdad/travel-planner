@@ -4,7 +4,7 @@ import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runPlanner, AI_PROVIDER } from "./lib/planner.mjs";
+import { runPlanner, AI_PROVIDER, AI_FALLBACK } from "./lib/planner.mjs";
 import { checkLimit, clientIp, limitBackend } from "./lib/limit.mjs";
 import { saveTrip, getTrip, deleteTrip } from "./lib/trips.mjs";
 import { redisReady } from "./lib/redis.mjs";
@@ -70,7 +70,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, status, out);
     }
 
-    if (req.method === "GET" && req.url === "/healthz") return sendJson(res, 200, { ok: true, storage: redisReady ? "redis" : "memory", ai: AI_PROVIDER });
+    if (req.method === "GET" && req.url === "/healthz") return sendJson(res, 200, { ok: true, storage: redisReady ? "redis" : "memory", ai: AI_PROVIDER, fallback: AI_FALLBACK });
 
     if (req.method === "GET") {
       const pathname = req.url.split("?")[0];

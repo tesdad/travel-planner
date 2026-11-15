@@ -58,10 +58,10 @@ function table(features) {
   const rows = Object.entries(features).sort((a, b) => b[1].costUSD - a[1].costUSD);
   if (!rows.length) return '<div class="msg">기록이 없습니다.</div>';
   return `<div class="table-wrap"><table>
-    <tr><th>기능</th><th>AI 호출</th><th>캐시 응답</th><th>캐시 비율</th><th>보조 모델→Claude 대체</th><th>평균 출력 토큰</th><th>평균 시간</th><th>1회 평균</th><th>합계</th></tr>
+    <tr><th>기능</th><th>AI 호출</th><th>캐시 응답</th><th>캐시 비율</th><th>보조 모델 실패</th><th>평균 출력 토큰</th><th>평균 시간</th><th>1회 평균</th><th>합계</th></tr>
     ${rows.map(([k, s]) => `<tr>
       <td>${esc(NAMES[k] || k)}</td><td>${s.calls}</td><td>${s.cacheHits}</td><td>${s.cacheHitRate}</td>
-      <td>${s.altCalls ? `${s.fallbacks}/${s.altCalls} (${s.fallbackRate})` : "-"}</td>
+      <td>${s.altCalls ? `${s.altFailures ?? s.fallbacks}/${s.altCalls} (${s.fallbackRate})${s.fallbacks ? ` · Claude 대체 ${s.fallbacks}` : ""}` : "-"}</td>
       <td>${s.avgOutputTokens.toLocaleString()}</td><td>${s.avgSeconds}s</td>
       <td>${usd(s.avgCostUSD)} <span class="msg">(${won(s.avgCostUSD)})</span></td><td>${usd(s.costUSD)}</td></tr>`).join("")}
   </table></div>`;

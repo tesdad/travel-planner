@@ -810,7 +810,8 @@ const AI_VENDORS = { deepseek: "DeepSeek(중국)", gemini: "Google(미국)" };
 fetch("/healthz").then((r) => r.json()).then((h) => {
   const vendor = AI_VENDORS[h.ai];
   if (vendor) {
-    $("#privacy-ai").textContent = `여행 일정 생성을 위해 ${vendor}의 AI로 전송되며, 처리에 실패하면 Anthropic(미국)의 AI로 다시 전송됩니다. 개인정보는 입력하지 마세요.`;
+    const backup = h.fallback ? ", 처리에 실패하면 Anthropic(미국)의 AI로 다시 전송됩니다" : "됩니다";
+    $("#privacy-ai").textContent = `여행 일정 생성을 위해 ${vendor}의 AI로 전송${h.fallback ? "되며" : ""}${backup}. 개인정보는 입력하지 마세요.`;
   }
 }).catch(() => {});
 
